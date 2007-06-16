@@ -11,7 +11,9 @@
 
 Capistrano::Configuration.instance.load do
   
-  # TODO : TAKE THESE OUT OF HERE.  CONFIG SHOULD NOT BE EMBEDDED IN THE PLUGIN
+  # TODO : TAKE THESE OUT OF HERE.  CONFIG SHOULD NOT BE EMBEDDED IN THE PLUGIN I THINK?
+  # GENERAL CONFIG IS OK, BUT I THINK FALLING BACK TO SPECIFIC AMI's is prob not a good idea.
+  # These defaults can also be added to the related methods as args = {:foo => "bar"} type defaults.  No?
   #set :aws_ami_id, "ami-f1b05598" # base centOS image
   #set :aws_security_group, "default"
   #set :aws_startup_delay, 60

@@ -29,7 +29,7 @@ Capistrano::Configuration.instance.load do
       DESC
       task :output do
         
-        capsize.set_instance_id
+        capsize.get_instance_id
         
         case instance_id
         when nil, ""
@@ -91,7 +91,6 @@ Capistrano::Configuration.instance.load do
           rescue Exception => e
             puts "The attempt to delete the keypair failed with the error : " + e
             raise e
-            raise
           end
         end
       end
@@ -104,6 +103,7 @@ Capistrano::Configuration.instance.load do
     
     namespace :instances do
       
+      # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
       desc <<-DESC
       Runs an instance of aws_ami_id with aws_keypair_name.
       DESC
@@ -126,7 +126,7 @@ Capistrano::Configuration.instance.load do
       DESC
       task :terminate do
         
-        capsize.set_instance_id
+        capsize.get_instance_id
         
         case instance_id
         when nil, ""
@@ -157,7 +157,6 @@ Capistrano::Configuration.instance.load do
           puts "The attempt to describe your instances failed with error : " + e
           raise e
         end
-        
         
         unless result.reservationSet.nil?
           result.reservationSet.item.each do |reservation|
@@ -203,6 +202,7 @@ Capistrano::Configuration.instance.load do
     
     namespace :security_groups do
       
+      # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
       desc <<-DESC
       Opens tcp access on port 80 and 22 to the specified aws_security_group.
       DESC
@@ -211,6 +211,7 @@ Capistrano::Configuration.instance.load do
         capsize.authorize_access({:group_name => aws_security_group, :from_port => "22"})
       end
       
+      # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
       desc <<-DESC
       Opens ip_protocol (tcp/udp) access on ports from_port-to_port to the specified aws_security_group.
       DESC
@@ -254,7 +255,7 @@ Capistrano::Configuration.instance.load do
     # this caused a nasty bug where I got the following error.  If I changed it to 'namespace :capsizer do' though it worked!!
     # WHY??? Report to Jamis?  Was a real PITA to track down...
     #
-    # /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/configuration/namespaces.rb:181:in `method_missing': undefined method `set_instance_id' for #<Capistrano::Configuration::Namespaces::Namespace:0x13cfce8> (NoMethodError)
+    # /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/configuration/namespaces.rb:181:in `method_missing': undefined method `get_instance_id' for #<Capistrano::Configuration::Namespaces::Namespace:0x13cfce8> (NoMethodError)
     #       from /usr/local/lib/ruby/gems/1.8/gems/capsize-0.5.0/lib/capsize/tasks.rb:32
     #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/configuration/execution.rb:80:in `instance_eval'
     #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/configuration/execution.rb:80:in `execute_task_without_callbacks'
@@ -271,6 +272,7 @@ Capistrano::Configuration.instance.load do
     #       from /usr/local/bin/cap:16
     
     
+    # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
     desc <<-DESC
     Creates a secure root password, adds a user, and gives that user sudo privileges on aws_hostname.
     This doesn't use Net::SSH, but rather shells out to SSH to access the host w/ private key auth.
@@ -296,6 +298,8 @@ Capistrano::Configuration.instance.load do
     # CAPISTRANO TASKS
     #########################################
     
+    # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
+    # Sean : Can you describe what this is really doing?
     
     desc <<-DESC
     A hack that gets around the inability to set roles in a namespace.

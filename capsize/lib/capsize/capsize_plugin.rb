@@ -136,11 +136,14 @@ module CapsizePlugin
   end
   
   
+  # TODO : GET THIS METHOD WORKING WITH NEW AMAZON-EC2
+  # TODO : ADD A REBOOT TASK
   # def reboot_instances(options= {:instance_ids => []})
   #   puts "not yet implmented"
   # end
   
   
+  # TODO : GET THIS METHOD WORKING WITH NEW AMAZON-EC2
   #run an EC2 instance
   #
   #requires options[:keypair_name] and options[:ami_id]
@@ -193,6 +196,7 @@ module CapsizePlugin
   #########################################
   
   
+  # TODO : GET THIS METHOD WORKING WITH NEW AMAZON-EC2
   #EC2 firewall control
   #
   #Opens access on options[:from_port]-options[:to_port] for the specified security group, ip_protocol, and ip
@@ -235,7 +239,7 @@ module CapsizePlugin
   end
   
   
-  def set_instance_id
+  def get_instance_id
     
     # Check for the instance_id in the following places in the following order:
     #
