@@ -1,0 +1,72 @@
+h2. Capsize : The Capistrano Plugin for EC2
+
+h2. &#x2192; 'capsize'
+
+h2. About
+
+Amazon Web Services offers a compute power on demand capability known as the Elastic Compute Cloud (EC2).  Using the current API's the compute resources in the cloud can be provisioned on demand by making SOAP or HTTP Query API calls to EC2.
+
+<b>Legal Stuff : This project is in no way affiliated nor does it represent Amazon.com, Amazon Web Services, or the Amazon Web Services Elastic Compute Cloud service.</b>
+
+This gem provides a plugin for the fantastic "Capistrano 2":http://www.capify.org/ deployment and server management tool written by Jamis Buck.  With this gem, and Capistrano installed, you will be able to issue commands and script your interaction with Amazon's Elastic Compute Cloud (EC2) service.  This gem depends on the installation of the newly updated 'amazon-ec2' Ruby Gem which is an interface library that can be used to interact with the Amazon EC2 system using the Query API (as opposed to SOAP).
+
+h2. Project Info
+
+This project is managed as a RubyForge project which you can find at "http://capsize.rubyforge.org/":http://capsize.rubyforge.org/ and this is always the best place to find the latest news, report any bugs, submit feature requests, or provide patches.
+
+h2. Documentation
+
+You can browse the complete RDoc generated documentation at:
+
+"http://capsize.rubyforge.org/rdoc/":http://capsize.rubyforge.org/rdoc/
+
+
+h2. Installing
+
+This gem follows the standard conventions for installation on any system with Ruby and RubyGems installed.  If you have worked with gems before this will look very familiar.
+
+h3. Installation pre-requisites
+
+Before you can make use of this gem you will need an "Amazon Web Services developer account":https://aws-portal.amazon.com/gp/aws/developer/registration/index.html.  This account must also be specifically enabled for Amazon EC2 usage.  AWS will provide you with an 'AWS Access Key ID' and a 'Secret Access Key' which will allow you to authenticate any API calls you make and ensure correct billing to you for usage of the service.  Take note of these (and keep them secret!).
+
+h3. Installing the gem
+
+Linux / OS X : <pre syntax="ruby">sudo gem install capsize</pre>
+
+Microsoft Windows : <pre syntax="ruby">gem install capsize</pre>
+
+Note : This gem has a number of dependencies for runtime and testing.  It is recommended that you choose 'Y' to install dependencies when asked by the gem install tool.
+
+h2. Sample Usage
+
+TODO :
+
+h3. Project Related Websites
+
+"http://aws.amazon.com/":http://aws.amazon.com/
+"http://amazon-ec2.rubyforge.org/":http://amazon-ec2.rubyforge.org/
+"http://capsize.rubyforge.org/":http://capsize.rubyforge.org/
+
+h3. Project Tools
+
+"Project Home":http://rubyforge.org/projects/capsize/
+TODO : FIX THESE LINKS
+"Downloads":http://rubyforge.org/frs/?group_id=2753
+"Browse Code":http://rubyforge.org/scm/?group_id=2753
+"Report Bugs":http://rubyforge.org/tracker/?group_id=2753
+"Request Features":http://rubyforge.org/tracker/?group_id=2753
+"Submit Patches":http://rubyforge.org/tracker/?group_id=2753
+
+
+h3. Related Projects
+
+"Capistrano 2":http://www.capify.org/
+
+
+h2. Credits
+
+The original version of the Capistrano plugin gem was written by Jesse Newland.  This plugin (which shall remain un-named due to the trademark infringement cease and desist letter he received!) was a great start to using what was then a pretty weak amazon-ec2 gem library (I can say that since I wrote the first version based on Amazon Web Services sample code).  Jesse has graciously allowed us to merge his project with the the EC2 gem and we are excited to have his help on the transition and helping to set the future direction of this gem.
+ 
+h2. Contact
+
+Comments, patches, and bug reports are very welcome. Please send an email to the address below or use the RubyForge forum for this project.

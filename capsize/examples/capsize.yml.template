@@ -1,0 +1,41 @@
+# capsize.yml
+
+# Regular Config Info for the Capsize (capsize) gem
+
+# This file should be setup to be deployed by capistrano
+# along with the rest of your application.  This file should only
+# contain non-security related config info and thusly can be 
+# safely versioned in your version control system.
+
+# I should be put in the RAILS_ROOT/config/capsize.yml of your Ruby on Rails app
+
+# set variables in 'common' that are the same across 
+# ALL environments.  This helps us keep this file nice and DRY.
+common: &common
+  
+  #defaults to the name of the :application set in deploy.rb
+  #key_name: 'my_cool_key_name'
+  
+  #defaults to 'config'.  Must not have trailing slash
+  #key_dir: 'config'
+  
+development:
+  <<: *common
+  
+  # Uncomment and I only apply to the dev environment
+  # or overwrite a common value
+  #foo: 'bar'
+  
+test:
+  <<: *common
+
+staging:
+  <<: *common
+  
+production:
+  <<: *common
+  
+  # Uncomment and I only apply to the production environment
+  # or overwrite a common value
+  #foo: 'baz'
+  

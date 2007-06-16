@@ -1,0 +1,18 @@
+== 2007/06/13
+
+* Re-branded Capsize 'capsize' with capsize no more...
+* Compatibility w/ Amazon EC2 (amazon-ec2) Gem v. >= 0.2.0
+* Lots of enhancements (See website or README.txt)
+
+== 2007/04/30
+
+* Compatibility w/ Capistrano 2.0
+
+== 2007/03/28
+
+* Fix gem dependancies
+
+== 2007/03/27
+
+* Initial Release
+* Provides Capistrano tasks wrapping the Amazon EC2 API

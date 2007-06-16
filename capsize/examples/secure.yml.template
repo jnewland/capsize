@@ -1,0 +1,41 @@
+# secure.yml
+
+# Secure Config Info for the Amazon EC2 (amazon-ec2) 
+# and Capsize (capsize) gems
+
+# WARNING : DO NOT VERSION IN SVN/SVK
+# You wouldn't want others to be able to browse SVN history
+# and see you secret identity would you?  Tip : Commit the
+# template version of this file in the config dir with empty 
+# AWS identity info.  That way its easy to recreate if you 
+# lose your real config file somehow.
+
+# This file should be setup to be deployed by Capistrano
+# along with the rest of your application.
+
+# I should be put in the RAILS_ROOT/config/secure.yml of your Ruby on Rails app
+
+common: &common
+  aws_access_key_id: '__YOUR_ACCESS_KEY_ID__'
+  aws_secret_access_key: '__YOUR_SECRET_ACCESS_KEY__'
+  
+development:
+  <<: *common
+  
+  # Uncomment and I only apply to the dev environment
+  # or overwrite a common value
+  #foo: 'bar'
+  
+test:
+  <<: *common
+
+staging:
+  <<: *common
+  
+production:
+  <<: *common
+  
+  # Uncomment and I only apply to the production environment
+  # or overwrite a common value
+  #foo: 'baz'
+  
