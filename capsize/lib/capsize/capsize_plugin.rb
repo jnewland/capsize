@@ -223,79 +223,82 @@ module CapsizePlugin
   #  * ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY']
   def connect(args = {})
     
-    @secure_config = load_secure_config()
-    @capsize_config = load_config()
+    raise Exception, "You must have an :aws_access_key_id defined." if get(:aws_access_key_id).nil? || get(:aws_access_key_id).empty?
+    raise Exception, "You must have an :aws_secret_access_key defined." if get(:aws_secret_access_key).nil? || get(:aws_secret_access_key).empty?
     
-    if ENV['AMAZON_ACCESS_KEY_ID'] && ENV['AMAZON_SECRET_ACCESS_KEY']
-      args = {:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY']}.merge(args)
-    end
-    unless @secure_config.nil? || @secure_config.aws_access_key_id.nil? || @secure_config.aws_access_key_id.empty?
-      args = {:access_key_id => @secure_config.aws_access_key_id, :secret_access_key => @secure_config.aws_secret_access_key}.merge(args)
-    end
     begin
-      amazon = EC2::AWSAuthConnection.new(:access_key_id => args[:access_key_id], :secret_access_key => args[:secret_access_key])
+      amazon = EC2::AWSAuthConnection.new(:access_key_id => get(:aws_access_key_id), :secret_access_key => get(:aws_secret_access_key))
     rescue EC2::Exception => e
       puts "Your EC2 authentication setup failed with the following message : " + e
       raise e
     end
   end
   
-  # capsize.get(:symbol_name) checks for variables in several places, with this precedence:
-  # * ENV["SYMBOL_NAME"]
-  # * TODO : secure_config.yml or capsize_config.yml
-  # * capistrano variables (command line, set in deploy.rb, etc)
-  # As a last resort, you're prompted at the command line for this variable
+  # capsize.get(:symbol_name) checks for variables in several places, with this precedence (from low to high):
+  # * In config/secure_config.yml 
+  # * In config/capsize_config.yml
+  # * In capistrano variables (deploy.rb or plugin defaults)
+  # * Passed in as part of the command line params and available as ENV["SYMBOL_NAME"]
+  # * As a response to command line prompt for this variable
+  #
   def get(symbol=nil)
     raise Exception if symbol.nil? || symbol.class != Symbol # TODO : Jesse: fixup exceptions in capsize
     
-    # if ENV["SYMBOL_NAME"] isn't nil and sybmol_name isn't already set, set it to ENV["SYMBOL_NAME"]
+    # populate the OpenStructs with contents of config files so we can query them.
+    @secure_config = load_config(:config_file => "config/secure.yml")
+    @capsize_config = load_config(:config_file => "config/capsize.yml")
+    
+    # if symbol exists as a var in the secure config, then set it to that
+    if @secure_config.respond_to?(symbol)
+      set symbol, fetch(symbol) { @secure_config.send(symbol) }
+    end
+    
+    # if symbol exists as a var in the capsize config, then set it to that
+    if @capsize_config.respond_to?(symbol)
+      set symbol, fetch(symbol) { @capsize_config.send(symbol) }
+    end
+    
+    # if ENV["SYMBOL_NAME"] isn't nil and symbol_name isn't already set, set it to ENV["SYMBOL_NAME"]
     unless ENV[symbol.to_s.upcase].nil?
       set symbol, fetch(symbol) { ENV[symbol.to_s.upcase] }
     end
     
-    # if sybmol_name isn't already set, prompt the user
-    set symbol, fetch(symbol) {Capistrano::CLI.ui.ask("#{symbol.to_s}: ")}
+    # finally if sybmol_name isn't already set, prompt the user
+    set symbol, fetch(symbol) {Capistrano::CLI.ui.ask("Please enter a value for #{symbol.to_s}: ")}
     
     #DRY up variable checking. If this was asked for, it was needed.
-    raise Exception if fetch(symbol).empty? # TODO : Jesse: fixup exceptions in capsize 
+    raise Exception, "Unable to get() the configuration variable #{symbol.to_s}" if fetch(symbol).empty? # TODO : Jesse: fixup exceptions in capsize 
     
     #return the variable
     fetch(symbol)
   end
   
   
-  # load a secure.yaml config file into a OpenStruct object. 
-  # This file should not be checked into source control as it
-  # contains security sensitive config info (AWS keys).
-  def load_secure_config(args = {})
-    args = {:config_file => "config/secure.yml"}.merge(args)
-    if File.exist?(args[:config_file])
-      config = OpenStruct.new(YAML.load_file(args[:config_file]))
-      @secure_config = OpenStruct.new(config.send(deploy_env))
-    end
-  end
-  
-  
-  # load a yaml config file into a OpenStruct object.
-  # TODO : When we make changes to this object we'll 
-  # save it out to the yaml file again so the changes are persisted.
+  # load specified ":config_file => 'foo.yaml'" into a OpenStruct object and return it. 
   def load_config(args = {})
-    args = {:config_file => "config/capsize.yml"}.merge(args)
+    args = {:config_file => ""}.merge(args)
+    raise Exception, "Config file location required" if args[:config_file].nil? || args[:config_file].empty?
+    
     if File.exist?(args[:config_file])
       config = OpenStruct.new(YAML.load_file(args[:config_file]))
-      @capsize_config = OpenStruct.new(config.send(deploy_env))
+      env_config =  OpenStruct.new(config.send(deploy_env))
+      
+      # Send back an empty OpenStruct if we can't load the config file.
+      # config files are not required!
+      if env_config.nil?
+        return OpenStruct.new
+      else
+        return env_config
+      end
+      
     end
   end
   
-  
-  #def save_config(args = {})
-  #  args = {:config_file => "config/capsize.yml"}.merge(args)
-  #  config_file = args[:config_file]
-  #  if File.exist?(config_file)
-  #    config = OpenStruct.new(YAML.load_file(config_file))
-  #    @capsize_config = OpenStruct.new(config.send(deploy_env))
-  #  end
-  #end
+  # TODO : I was thinking that maybe we can have a way to serialize the instance info for instances
+  # that we have started through this tool.  So for example, when you start an instance we can push
+  # its instance ID onto an object and then serialize it to yaml in the config dir.  This way we can
+  # maintain a sort of database without any of the dependencies of a DB?  Not really fleshed out.  Just
+  # putting this here as a reminder as something to think about??
   
   def print_instance_description(result = nil)
     puts "" if result.nil?
