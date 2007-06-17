@@ -42,8 +42,8 @@ module CapsizePlugin
     # default keyname is the same as our appname, unless specifically overriden in capsize.yml
     # default key dir is config unless specifically overriden in capsize.yml
     args = {:key_name => "#{application}", :key_dir => "config"}.merge(args)
-    args[:key_name] = @capsize_config.key_name unless @capsize_config.key_name.nil? || @capsize_config.key_name.empty?
-    args[:key_dir] = @capsize_config.key_dir unless @capsize_config.key_dir.nil? || @capsize_config.key_dir.empty?
+    args[:key_name] = @capsize_config.key_name unless @capsize_config.nil? || @capsize_config.key_name.nil? || @capsize_config.key_name.empty?
+    args[:key_dir] = @capsize_config.key_dir unless @capsize_config.nil? || @capsize_config.key_dir.nil? || @capsize_config.key_dir.empty?
     
     # create the string that represents the full dir/name.key
     key_file = [args[:key_dir],args[:key_name]].join('/') + '.key'
@@ -93,8 +93,8 @@ module CapsizePlugin
     # default keyname is the same as our appname, unless specifically overriden in capsize.yml
     # default key dir is config unless specifically overriden in capsize.yml
     args = {:key_name => "#{application}", :key_dir => "config"}.merge(args)
-    args[:key_name] = @capsize_config.key_name unless @capsize_config.key_name.nil? || @capsize_config.key_name.empty?
-    args[:key_dir] = @capsize_config.key_dir unless @capsize_config.key_dir.nil? || @capsize_config.key_dir.empty?
+    args[:key_name] = @capsize_config.key_name unless @capsize_config.nil? || @capsize_config.key_name.nil? || @capsize_config.key_name.empty?
+    args[:key_dir] = @capsize_config.key_dir unless @capsize_config.nil? || @capsize_config.key_dir.nil? || @capsize_config.key_dir.empty?
     
     # create the string that represents the full dir/name.key
     key_file = [args[:key_dir],args[:key_name]].join('/') + '.key'
@@ -143,36 +143,32 @@ module CapsizePlugin
   # end
   
   
-  # TODO : GET THIS METHOD WORKING WITH NEW AMAZON-EC2
   #run an EC2 instance
   #
-  #requires options[:keypair_name] and options[:ami_id]
+  #requires options[:keypair_name] and options[:image_id]
   #
   #userdata may also passed to this instance with options[:user_data].
   #specifiy if this data is base_64 encoded with the boolean options[:base64_encoded]
-  def run_instance(auth = {},args = {})
-    amazon = connect(auth)
-    
-    options = {:min_count => 1, :max_count => 1, :base64_encoded => false, :group_ids => []}
-    options.merge!(args)
+  def run_instance(args = {})
+    amazon = connect()
     
     #verify keypair_name and ami_id passed
-    raise Exception, "Keypair name required" if options[:keypair_name].nil?
-    raise Exception, "AMI id required" if options[:ami_id].nil?
+    raise Exception, "Keypair name required" if args[:keypair_name].nil?
+    raise Exception, "AMI id required" if args[:image_id].nil?
     
-    instance = amazon.run_instances(options[:ami_id], {:minCount=> options[:min_count], :maxCount => options[:max_count], :keyname => options[:keypair_name], :groupIds => options[:group_ids], :userData => options[:user_data], :base64Encoded => options[:base64_encoded]}).parse[1]
-    raise Exception, "Instance did not start" unless instance[4] == "pending"
-    instance_id = instance[1]
+    response = amazon.run_instances(args)
+    raise Exception, "Instance did not start" unless response.instancesSet.item[0].instanceState.name == "pending"
+    instance_id = response.instancesSet.item[0].instanceId
     puts "Instance #{instance_id} Startup Pending"
     
     #loop checking for instance startup
     puts "Checking every 10 seconds to detect startup for up to 5 minutes"
     tries = 0
     begin
-      instance_desc = amazon.describe_instances.parse.select { |i| i[1] == instance_id.to_s }[0]
-      raise "Server Not Running" unless instance_desc[4] == "running"
+      instance = amazon.describe_instances(:instance_id => instance_id)
+      raise "Server Not Running" unless instance.reservationSet.item[0].instancesSet.item[0].instanceState.name == "running"
       sleep 5
-      return instance_desc
+      return instance
     rescue
       puts "."
       sleep 10
@@ -220,16 +216,22 @@ module CapsizePlugin
   #########################################
   # call these from tasks with 'capsize.method_name'
   
-  
   # returns an EC2::AWSAuthConnection object
-  # requires an auth hash that looks like:
-  # {:access_key_id => "my_access_key_id", :secret_access_key => "my_secret_access_key"}
+  # accepts authentication in 3 forms:
+  #  * connect(args = {:access_key_id => "my_access_key_id", :secret_access_key => "my_secret_access_key"})
+  #  * config/secure_config.yml
+  #  * ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY']
   def connect(args = {})
     
     @secure_config = load_secure_config()
     @capsize_config = load_config()
     
-    args = {:access_key_id => @secure_config.aws_access_key_id, :secret_access_key => @secure_config.aws_secret_access_key}.merge(args)
+    if ENV['AMAZON_ACCESS_KEY_ID'] && ENV['AMAZON_SECRET_ACCESS_KEY']
+      args = {:access_key_id => ENV['AMAZON_ACCESS_KEY_ID'], :secret_access_key => ENV['AMAZON_SECRET_ACCESS_KEY']}.merge(args)
+    end
+    unless @secure_config.nil? || @secure_config.aws_access_key_id.nil? || @secure_config.aws_access_key_id.empty?
+      args = {:access_key_id => @secure_config.aws_access_key_id, :secret_access_key => @secure_config.aws_secret_access_key}.merge(args)
+    end
     begin
       amazon = EC2::AWSAuthConnection.new(:access_key_id => args[:access_key_id], :secret_access_key => args[:secret_access_key])
     rescue EC2::Exception => e
@@ -238,36 +240,27 @@ module CapsizePlugin
     end
   end
   
-  
-  def get_instance_id
+  # capsize.get(:symbol_name) checks for variables in several places, with this precedence:
+  # * ENV["SYMBOL_NAME"]
+  # * TODO : secure_config.yml or capsize_config.yml
+  # * capistrano variables (command line, set in deploy.rb, etc)
+  # As a last resort, you're prompted at the command line for this variable
+  def get(symbol=nil)
+    raise Exception if symbol.nil? || symbol.class != Symbol # TODO : Jesse: fixup exceptions in capsize
     
-    # Check for the instance_id in the following places in the following order:
-    #
-    # - In deploy.rb : set :instance_id, "i-FOOBAR"
-    # - As an arg on the command line : cap ec2:terminate_instance INSTANCE_ID='i-nnnnnnnn'.
-    #   Using this will override anything explicitly set in deploy.rb
-    # - If neither of those is set then prompt the user to enter the instance_id 
-    #   they want to operate on.
-    
-    # set :instance_id to the arg passed in on the command line.
-    # this will override any existing instance_id that might
-    # have been set in deploy.rb (or just set it as a new var)
-    unless ENV['INSTANCE_ID'].nil?
-      set(:instance_id) do
-        ENV['INSTANCE_ID']
-      end
+    # if ENV["SYMBOL_NAME"] isn't nil and sybmol_name isn't already set, set it to ENV["SYMBOL_NAME"]
+    unless ENV[symbol.to_s.upcase].nil?
+      set symbol, fetch(symbol) { ENV[symbol.to_s.upcase] }
     end
     
-    # neither deploy.rb or command args were passed to define instance_id.
-    # now we prompt the user...
-    unless exists?(:instance_id)
-      set(:instance_id) do
-        Capistrano::CLI.ui.ask "Please specify an instance ID (i-nnnnnnnn) : "
-      end
-    end
+    # if sybmol_name isn't already set, prompt the user
+    set symbol, fetch(symbol) {Capistrano::CLI.ui.ask("#{symbol.to_s}: ")}
     
-    return true
+    #DRY up variable checking. If this was asked for, it was needed.
+    raise Exception if fetch(symbol).empty? # TODO : Jesse: fixup exceptions in capsize 
     
+    #return the variable
+    fetch(symbol)
   end
   
   
@@ -303,6 +296,45 @@ module CapsizePlugin
   #    @capsize_config = OpenStruct.new(config.send(deploy_env))
   #  end
   #end
+  
+  def print_instance_description(result = nil)
+    puts "" if result.nil?
+    unless result.reservationSet.nil?
+      result.reservationSet.item.each do |reservation|
+        puts "reservationSet:reservationId = " + reservation.reservationId
+        puts "reservationSet:ownerId = " + reservation.ownerId
+        
+          unless reservation.groupSet.nil?
+            reservation.groupSet.item.each do |group|
+              puts "  groupSet:groupId = " + group.groupId unless group.groupId.nil?
+            end
+          end
+          
+          unless reservation.instancesSet.nil?
+            reservation.instancesSet.item.each do |instance|
+              puts "  instancesSet:instanceId = " + instance.instanceId unless instance.instanceId.nil?
+              puts "  instancesSet:imageId = " + instance.imageId unless instance.imageId.nil?
+              puts "  instancesSet:privateDnsName = " + instance.privateDnsName unless instance.privateDnsName.nil?
+              puts "  instancesSet:dnsName = " + instance.dnsName unless instance.dnsName.nil?
+              puts "  instancesSet:reason = " + instance.reason unless instance.reason.nil?
+              puts "  instancesSet:amiLaunchIndex = " + instance.amiLaunchIndex
+              
+              unless instance.instanceState.nil?
+                puts "  instanceState:code = " + instance.instanceState.code
+                puts "  instanceState:name = " + instance.instanceState.name
+              end
+              
+            end
+            
+          end
+          
+        puts "" 
+      end
+    else
+      puts "You don't own any running or pending instances"
+    end
+  end
+  
   
   
 end

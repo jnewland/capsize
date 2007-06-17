@@ -29,7 +29,7 @@ Capistrano::Configuration.instance.load do
       DESC
       task :output do
         
-        capsize.get_instance_id
+        capsize.get(:instance_id)
         
         case instance_id
         when nil, ""
@@ -103,15 +103,14 @@ Capistrano::Configuration.instance.load do
     
     namespace :instances do
       
-      # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
       desc <<-DESC
       Runs an instance of aws_ami_id with aws_keypair_name.
       DESC
       task :run do
-        instance_desc = capsize.run_instance({:ami_id => aws_ami_id, :keypair_name => aws_keypair_name})
-        puts instance_desc.join("\t")
-        set(:aws_instance_id, instance_desc[1])
-        set(:aws_hostname, instance_desc[3])
+        response = capsize.run_instance({:image_id => capsize.get(:aws_ami_id), :keypair_name => capsize.get(:aws_keypair_name)})
+        capsize.print_instance_description(response)
+        set(:aws_instance_id, response.reservationSet.item[0].instancesSet.item[0].instanceId)
+        set(:aws_hostname, response.reservationSet.item[0].instancesSet.item[0].dnsName)
         set(:target_role, aws_hostname)
         set_default_roles_to_target_role
       end
@@ -126,7 +125,7 @@ Capistrano::Configuration.instance.load do
       DESC
       task :terminate do
         
-        capsize.get_instance_id
+        capsize.get(:instance_id)
         
         case instance_id
         when nil, ""
@@ -136,7 +135,7 @@ Capistrano::Configuration.instance.load do
           if confirm
             begin
               response = capsize.terminate_instance({:instance_id => instance_id})
-              puts "The request to terminate instance_id #{instance_id} has been accepted.  Monitor the status of the request with 'cap ec2:describe_instances'"
+              puts "The request to terminate instance_id #{instance_id} has been accepted.  Monitor the status of the request with 'cap ec2:instances:describe'"
             rescue Exception => e
               puts "The attempt to terminate the instance failed with error : " + e
               raise e
@@ -158,40 +157,7 @@ Capistrano::Configuration.instance.load do
           raise e
         end
         
-        unless result.reservationSet.nil?
-          result.reservationSet.item.each do |reservation|
-            puts "reservationSet:reservationId = " + reservation.reservationId
-            puts "reservationSet:ownerId = " + reservation.ownerId
-            
-              unless reservation.groupSet.nil?
-                reservation.groupSet.item.each do |group|
-                  puts "  groupSet:groupId = " + group.groupId unless group.groupId.nil?
-                end
-              end
-              
-              unless reservation.instancesSet.nil?
-                reservation.instancesSet.item.each do |instance|
-                  puts "  instancesSet:instanceId = " + instance.instanceId unless instance.instanceId.nil?
-                  puts "  instancesSet:imageId = " + instance.imageId unless instance.imageId.nil?
-                  puts "  instancesSet:privateDnsName = " + instance.privateDnsName unless instance.privateDnsName.nil?
-                  puts "  instancesSet:dnsName = " + instance.dnsName unless instance.dnsName.nil?
-                  puts "  instancesSet:reason = " + instance.reason unless instance.reason.nil?
-                  puts "  instancesSet:amiLaunchIndex = " + instance.amiLaunchIndex
-                  
-                  unless instance.instanceState.nil?
-                    puts "  instanceState:code = " + instance.instanceState.code
-                    puts "  instanceState:name = " + instance.instanceState.name
-                  end
-                  
-                end
-                
-              end
-              
-            puts "" 
-          end
-        else
-          puts "You don't own any running or pending instances"
-        end
+        capsize.print_instance_description(result)
       end
       
     end
@@ -225,6 +191,7 @@ Capistrano::Configuration.instance.load do
     
     # IMAGE TASKS
     #########################################
+    # TODO : separate public/private image list methods?
     
     namespace :images do
       
@@ -298,8 +265,8 @@ Capistrano::Configuration.instance.load do
     # CAPISTRANO TASKS
     #########################################
     
-    # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
     # Sean : Can you describe what this is really doing?
+    # Jesse : this helper method is called in instances:run to set the default roles to the newly spawned EC2 instance
     
     desc <<-DESC
     A hack that gets around the inability to set roles in a namespace.
