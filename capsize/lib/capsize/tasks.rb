@@ -218,26 +218,6 @@ Capistrano::Configuration.instance.load do
     # CAPSIZE TASKS
     #########################################
     
-    # BUG : I tried to put this task in a 'namespace :capsize do' block just like the others
-    # this caused a nasty bug where I got the following error.  If I changed it to 'namespace :capsizer do' though it worked!!
-    # WHY??? Report to Jamis?  Was a real PITA to track down...
-    #
-    # /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/configuration/namespaces.rb:181:in `method_missing': undefined method `get_instance_id' for #<Capistrano::Configuration::Namespaces::Namespace:0x13cfce8> (NoMethodError)
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capsize-0.5.0/lib/capsize/tasks.rb:32
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/configuration/execution.rb:80:in `instance_eval'
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/configuration/execution.rb:80:in `execute_task_without_callbacks'
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/configuration/callbacks.rb:27:in `execute_task'
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/configuration/execution.rb:92:in `find_and_execute_task'
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/cli/execute.rb:43:in `execute_requested_actions_without_help'
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/cli/execute.rb:42:in `each'
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/cli/execute.rb:42:in `execute_requested_actions_without_help'
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/cli/help.rb:19:in `execute_requested_actions'
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/cli/execute.rb:31:in `execute!'
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/lib/capistrano/cli/execute.rb:14:in `execute'
-    #       from /usr/local/lib/ruby/gems/1.8/gems/capistrano-1.99.1/bin/cap:4
-    #       from /usr/local/bin/cap:16:in `load'
-    #       from /usr/local/bin/cap:16
-    
     
     # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
     desc <<-DESC
@@ -265,12 +245,8 @@ Capistrano::Configuration.instance.load do
     # CAPISTRANO TASKS
     #########################################
     
-    # Sean : Can you describe what this is really doing?
-    # Jesse : this helper method is called in instances:run to set the default roles to the newly spawned EC2 instance
-    
-    desc <<-DESC
-    A hack that gets around the inability to set roles in a namespace.
-    DESC
+    # This helper method is called in instances:run to set the default roles to the newly spawned EC2 instance
+    # no desc "" so this method does not show up in 'cap -T' listing as it should not be called directly.
     task :set_default_roles_to_target_role do
       role :web, target_role
       role :app, target_role
