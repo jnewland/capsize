@@ -235,11 +235,11 @@ module CapsizePlugin
   end
   
   # capsize.get(:symbol_name) checks for variables in several places, with this precedence (from low to high):
-  # * In config/secure_config.yml 
-  # * In config/capsize_config.yml
-  # * In capistrano variables (deploy.rb or plugin defaults)
-  # * Passed in as part of the command line params and available as ENV["SYMBOL_NAME"]
-  # * As a response to command line prompt for this variable
+  # * default capistrano or capsize set variables
+  # * Set in config/secure_config.yml (overwrites previous)
+  # * Set in config/capsize_config.yml (overwrites previous)
+  # * Passed in as part of the command line params and available as ENV["SYMBOL_NAME"] (overwrites previous)
+  # * If all of the above return nil, get response to command line prompt for this variable
   #
   def get(symbol=nil)
     raise Exception if symbol.nil? || symbol.class != Symbol # TODO : Jesse: fixup exceptions in capsize
@@ -247,6 +247,28 @@ module CapsizePlugin
     # populate the OpenStructs with contents of config files so we can query them.
     @secure_config = load_config(:config_file => "config/secure.yml")
     @capsize_config = load_config(:config_file => "config/capsize.yml")
+    
+    # TODO : I have not had a chance to really test this yet, but I am thinking that
+    # calling fetch each time for each of these possible config sources 
+    # is not the right thing.  Perhaps instead for each possible source in the
+    # config hierarchy (see comments above get() method) we should just set()
+    # each time.  e.g. if :foo is present in secure.yml, but :foo is also present
+    # in capsize.yml then whatever the value of :foo is in capsize.yml would overwrite
+    # what is in secure.yml.  And an ENV variable ENV['FOO'] if it exists would
+    # overwrite anything set in the previous two.  Otherwise, I think the way we
+    # have it right now, each fetch will only return what was set by the first 
+    # place where that config was successfully found.  No?
+    #
+    # Q #2:  Is this the right hierarchy we should follow (from low to high priority):
+    # - default plugin or cap provided values
+    # - secure
+    # - config
+    # - ENV[]
+    # - command line prompt
+    # 
+    
+    # get var from default capsize or default capistrano set vars
+    set symbol, fetch(symbol, "")
     
     # if symbol exists as a var in the secure config, then set it to that
     if @secure_config.respond_to?(symbol)
@@ -270,7 +292,7 @@ module CapsizePlugin
     raise Exception, "Unable to get() the configuration variable #{symbol.to_s}" if fetch(symbol).empty? # TODO : Jesse: fixup exceptions in capsize 
     
     #return the variable
-    fetch(symbol)
+    return fetch(symbol)
   end
   
   
@@ -284,7 +306,8 @@ module CapsizePlugin
       env_config =  OpenStruct.new(config.send(deploy_env))
       
       # Send back an empty OpenStruct if we can't load the config file.
-      # config files are not required!
+      # config files are not required!  Want to avoid method calls on nil
+      # if there are no config files to load.
       if env_config.nil?
         return OpenStruct.new
       else
