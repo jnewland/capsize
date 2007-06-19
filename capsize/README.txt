@@ -1,3 +1,5 @@
+another post commit test
+
 = Capsize
 
 Capsize provides Capistrano tasks to manage Amazon EC2. Capsize depends on the following gems being installed:
