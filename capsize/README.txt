@@ -2,6 +2,7 @@ post-commit test checkins
 1
 2
 3
+4
 
 = Capsize
 
