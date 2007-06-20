@@ -19,7 +19,6 @@ Capistrano::Configuration.instance.load do
     
     namespace :console do
       
-      desc ""
       desc <<-DESC
       Show instance console output.
       You can view the console of a specific instance by doing one of the following:
@@ -55,6 +54,7 @@ Capistrano::Configuration.instance.load do
     
     namespace :keypairs do
       
+      # TODO : ADD FULL CAP -E DOCS HERE
       desc "Describes your keypairs."
       task :describe do
         begin
@@ -70,6 +70,7 @@ Capistrano::Configuration.instance.load do
       end
       
       
+      # TODO : ADD FULL CAP -E DOCS HERE
       desc "Create and store a new keypair."
       task :create do
         begin
@@ -81,6 +82,7 @@ Capistrano::Configuration.instance.load do
       end
       
       
+      # TODO : ADD FULL CAP -E DOCS HERE
       desc "Delete a keypair from EC2 and local files."
       task :delete do
         
@@ -105,6 +107,7 @@ Capistrano::Configuration.instance.load do
       
       # TODO : keypairs:create automatically saves the key pair with the name of the application in the config dir.  We
       # should make it so that it uses that if it exists, and only get() it from the config if that is not found?
+      # TODO : ADD FULL CAP -E DOCS HERE
       desc <<-DESC
       Runs an instance of aws_ami_id with aws_keypair_name.
       DESC
@@ -179,6 +182,7 @@ Capistrano::Configuration.instance.load do
       end
       
       
+      # TODO : ADD FULL CAP -E DOCS HERE
       desc "Info about your instances."
       task :describe do
         
@@ -198,35 +202,63 @@ Capistrano::Configuration.instance.load do
     # SECURITY GROUP TASKS
     #########################################
     
+    
     namespace :security_groups do
       
-      # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
       desc <<-DESC
-      Opens tcp access on port 80 and 22 to the specified aws_security_group.
+      Authorize firewall ingress for the specified GROUP_NAME and FROM_PORT.
+      This calls authorize_ingress for the group defined in the :group_name variable
+      and the port specified in :from_port and :to_port. Any instances that were started and set to
+      use the security group :group_name will be affected as soon as possible. You can 
+      specify a port range, instead of a single port if both FROM_PORT and TO_PORT are passed in.
       DESC
-      task :authorize_web_and_ssh_access do
-        capsize.authorize_access({:group_name => aws_security_group, :from_port => "80"})
-        capsize.authorize_access({:group_name => aws_security_group, :from_port => "22"})
+      task :authorize_ingress do
+        
+        begin
+          capsize.authorize_ingress({:group_name => capsize.get(:group_name), :from_port => capsize.get(:from_port), :to_port => capsize.get(:to_port)})
+          puts "Firewall ingress granted for :group_name => #{capsize.get(:group_name)} on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)}"
+        rescue EC2::InvalidPermissionDuplicate => e
+          puts "The firewall ingress rule you specified for group name \"#{capsize.get(:group_name)}\" on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)} was already set (EC2::InvalidPermissionDuplicate)."
+          # Don't re-raise this exception
+        rescue Exception => e
+          puts "The attempt to allow firewall ingress on port #{capsize.get(:from_port)} to #{capsize.get(:to_port)} for security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
+          raise e
+        end
+        
       end
       
-      # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
+      
       desc <<-DESC
-      Opens ip_protocol (tcp/udp) access on ports from_port-to_port to the specified aws_security_group.
+      Revoke firewall ingress for the specified GROUP_NAME and FROM_PORT.
+      This calls revoke_ingress for the group defined in the :group_name variable
+      and the port specified in :from_port and :to_port. Any instances that were started and set to
+      use the security group :group_name will be affected as soon as possible. You can 
+      specify a port range, instead of a single port if both FROM_PORT and TO_PORT are passed in.
       DESC
-      task :authorize_port_range do
-        capsize.authorize_access({:group_name => aws_security_group, :ip_protocol => ip_protocol, :from_port => from_port, :to_port => to_port})
+      task :revoke_ingress do
+        
+        begin
+          capsize.revoke_ingress({:group_name => capsize.get(:group_name), :from_port => capsize.get(:from_port), :to_port => capsize.get(:to_port)})
+          puts "Firewall ingress revoked for :group_name => #{capsize.get(:group_name)} on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)}"
+        rescue Exception => e
+          puts "The attempt to revoke firewall ingress permissions on port #{capsize.get(:from_port)} to #{capsize.get(:to_port)} for security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
+          raise e
+        end
+        
       end
       
     end
     
     
-    
     # IMAGE TASKS
     #########################################
-    # TODO : separate public/private image list methods?
+    
+    # TODO : separate public/private image list methods?, No, prob better to be able to pass in a param to say:
+    # OWNER_ID = "self", or "amazon", or the other options allowed...
     
     namespace :images do
       
+      # TODO : ADD FULL CAP -E DOCS HERE
       desc "Describe machine images you can execute."
       task :describe do
         begin
@@ -252,6 +284,7 @@ Capistrano::Configuration.instance.load do
     
     
     # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
+    # TODO : ADD FULL CAP -E DOCS HERE
     desc <<-DESC
     Creates a secure root password, adds a user, and gives that user sudo privileges on aws_hostname.
     This doesn't use Net::SSH, but rather shells out to SSH to access the host w/ private key auth.

@@ -21,7 +21,11 @@ common: &common
   
   # use an ssl connection to talk to EC2? true or false allowed (no quotes)
   # Defaults to true
-  #capsize_use_ssl: true
+  #use_ssl: true
+  
+  # Set the default security group to apply firewall ingress rules to.  
+  # Defaults, appropriately, to 'default' security group.
+  #group_name: 'default'
   
 development:
   <<: *common

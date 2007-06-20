@@ -11,15 +11,17 @@
 
 Capistrano::Configuration.instance.load do
   
-  # TODO : TAKE THESE OUT OF HERE.  CONFIG SHOULD NOT BE EMBEDDED IN THE PLUGIN I THINK?
-  # GENERAL CONFIG IS OK, BUT I THINK FALLING BACK TO SPECIFIC AMI's is prob not a good idea.
-  # These defaults can also be added to the related methods as args = {:foo => "bar"} type defaults.  No?
-  #set :aws_ami_id, "ami-f1b05598" # base centOS image
-  #set :aws_security_group, "default"
+  # Set reasonable defaults for all needed values so in theory this Cap plugin
+  # will work out-of-the-box with no external config required.
+  
   #set :aws_startup_delay, 60
   
   # Determine where we will deploy to.  if TARGET is not specified 
   # then setup for production by default
+  # TODO : CHANGE THIS TO TARGET_ENV IN HERE AND AMAZON-EC2
   set :deploy_env, ENV['TARGET'] ||= "production"
+  
+  # Set the security group name default to the 'default' group.
+  set :group_name, 'default'
   
 end

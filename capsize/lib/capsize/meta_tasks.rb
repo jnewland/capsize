@@ -15,6 +15,7 @@ Capistrano::Configuration.instance.load do
     
     # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
     # TODO : GET THIS TASK WORKING WITH NEW TASKS HERE, AND MAKE SURE WE ARE DOING THE RIGHT STEPS?
+    # TODO : ADD FULL CAP -E DOCS HERE
     desc <<-DESC
     A task that does everything the other tasks do, all at once, and prompts for required variables if they don't exist.
     DESC
@@ -35,6 +36,7 @@ Capistrano::Configuration.instance.load do
     # TODO : Do we really still need this?  Perhaps instead of kicking out
     # text to add to deploy.rb, we should copy over the template config files (secure.yml and capsize.yml)
     # to the rails config dir.  No?
+    # TODO : ADD FULL CAP -E DOCS HERE
     desc <<-DESC
     Writes out the config keys pertaining to capsize.
     DESC

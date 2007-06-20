@@ -90,6 +90,7 @@ module CapsizePlugin
   def delete_keypair(args = {})
     amazon = connect()
     
+    # TODO : Replace @capsize_config with calls to get()
     # default keyname is the same as our appname, unless specifically overriden in capsize.yml
     # default key dir is config unless specifically overriden in capsize.yml
     args = {:key_name => "#{application}", :key_dir => "config"}.merge(args)
@@ -136,25 +137,16 @@ module CapsizePlugin
   end
   
   
-  # TODO : GET THIS METHOD WORKING WITH NEW AMAZON-EC2
-  # TODO : ADD A REBOOT TASK
-  # def reboot_instances(options= {:instance_ids => []})
-  #   puts "not yet implmented"
-  # end
-  
-  
   #run an EC2 instance
-  #
   #requires options[:keypair_name] and options[:image_id]
-  #
   #userdata may also passed to this instance with options[:user_data].
   #specifiy if this data is base_64 encoded with the boolean options[:base64_encoded]
   def run_instance(args = {})
     amazon = connect()
     
     #verify keypair_name and ami_id passed
-    raise Exception, "Keypair name required" if args[:keypair_name].nil?
-    raise Exception, "AMI id required" if args[:image_id].nil?
+    raise Exception, "Keypair name required" if args[:keypair_name].nil? || args[:keypair_name].empty?
+    raise Exception, "AMI id required" if args[:image_id].nil? || args[:image_id].empty?
     
     response = amazon.run_instances(args)
     raise Exception, "Instance did not start" unless response.instancesSet.item[0].instanceState.name == "pending"
@@ -201,23 +193,65 @@ module CapsizePlugin
   #########################################
   
   
-  # TODO : GET THIS METHOD WORKING WITH NEW AMAZON-EC2
-  #EC2 firewall control
-  #
-  #Opens access on options[:from_port]-options[:to_port] for the specified security group, ip_protocol, and ip
-  def authorize_access(auth = {}, args = {})
-    amazon = connect(auth)
+  # Define firewall access rules for a specific security group.  Instances will inherit
+  # the security group permissions based on the group they are assigned to.
+  def authorize_ingress(args = {})
+    amazon = connect()
     
-    options = {:group_name => 'default', :ip_protocol => 'tcp', :cidr_ip => "0.0.0.0/0"}
-    options.merge!(args)
+    options = { :group_name => get(:group_name),
+                :ip_protocol => 'tcp',
+                :from_port => nil,
+                :to_port => nil,
+                :cidr_ip => '0.0.0.0/0',
+                :source_security_group_name => "",
+                :source_security_group_owner_id => "" }.merge(args)
     
-    #verify from_ip
-    raise Exception, "from_port required" if options[:from_port].nil?
-    options[:to_port] = options[:from_port] if options[:to_port].nil?
+    # Verify only that :group_name is passed.  This is the only REQUIRED parameter.
+    # The others are optional and depend on what it is you are trying to 
+    # do (CIDR based permissions vs. user/group pair permissions).  We let the EC2
+    # service itself do the validations on the extra params and count on it to raise an exception
+    # if it doesn't like the args passed.  We'll see an EC2::Exception class returned if so.
+    raise Exception, "You must specify a :group_name" if options[:group_name].nil? || options[:group_name].empty?
     
-    web_security_response = amazon.authorize_security_group_ingress("", :groupName => options[:group_name], :ipProtocol => options[:ip_protocol], :fromPort => options[:from_port], :toPort => options[:to_port], :cidrIp => options[:cidr_ip]).parse.to_s
-    raise "Failed Authorizing Web Access" unless web_security_response == "Ingress authorized."
-    puts "Access Granted for #{options[:group_name]} group on interface #{options[:cidr_ip]} for #{options[:ip_protocol]} port(s) #{options[:from_port]} to #{options[:to_port]}."
+    # set the :to_port to the same value as :from_port if :to_port was not explicitly defined.
+    unless options[:from_port].nil? || options[:from_port].empty?
+      set :to_port, options[:from_port] if options[:to_port].nil? || options[:to_port].empty?
+      options[:to_port] = to_port if options[:to_port].nil? || options[:to_port].empty?
+    end
+    
+    amazon.authorize_security_group_ingress(options)
+    
+  end
+  
+  
+  # Revoke firewall access rules for a specific security group.  Instances will inherit
+  # the security group permissions based on the group they are assigned to.
+  def revoke_ingress(args = {})
+    amazon = connect()
+    
+    options = { :group_name => get(:group_name),
+                :ip_protocol => 'tcp',
+                :from_port => nil,
+                :to_port => nil,
+                :cidr_ip => '0.0.0.0/0',
+                :source_security_group_name => "",
+                :source_security_group_owner_id => "" }.merge(args)
+    
+    # Verify only that :group_name is passed.  This is the only REQUIRED parameter.
+    # The others are optional and depend on what it is you are trying to 
+    # do (CIDR based permissions vs. user/group pair permissions).  We let the EC2
+    # service itself do the validations on the extra params and count on it to raise an exception
+    # if it doesn't like the args passed.  We'll see an EC2::Exception class returned if so.
+    raise Exception, "You must specify a :group_name" if options[:group_name].nil? || options[:group_name].empty?
+    
+    # set the :to_port to the same value as :from_port if :to_port was not explicitly defined.
+    unless options[:from_port].nil? || options[:from_port].empty?
+      set :to_port, options[:from_port] if options[:to_port].nil? || options[:to_port].empty?
+      options[:to_port] = to_port if options[:to_port].nil? || options[:to_port].empty?
+    end
+    
+    amazon.revoke_security_group_ingress(options)
+    
   end
   
   
@@ -232,13 +266,13 @@ module CapsizePlugin
     # get the :use_ssl value from the config pool and set it if its available
     # this will allow users to globally override whether or not their connection
     # is made via SSL in their config files or deploy.rb.  Of course default to using SSL.
-    case get(:capsize_use_ssl)
+    case get(:use_ssl)
     when true, nil
-      set :capsize_use_ssl, true
+      set :use_ssl, true
     when false
-      set :capsize_use_ssl, false
+      set :use_ssl, false
     else
-      raise Exception, "You have an invalid value in your config for :capsize_use_ssl. Must be 'true' or 'false'."
+      raise Exception, "You have an invalid value in your config for :use_ssl. Must be 'true' or 'false'."
     end
     
     # Optimized so we don't read the config files six times just to connect.
@@ -250,7 +284,7 @@ module CapsizePlugin
     raise Exception, "You must have an :aws_secret_access_key defined in your config." if fetch(:aws_secret_access_key).nil? || fetch(:aws_secret_access_key).empty?
     
     begin
-      return amazon = EC2::Base.new(:access_key_id => get(:aws_access_key_id), :secret_access_key => get(:aws_secret_access_key), :use_ssl => capsize_use_ssl)
+      return amazon = EC2::Base.new(:access_key_id => get(:aws_access_key_id), :secret_access_key => get(:aws_secret_access_key), :use_ssl => use_ssl)
     rescue Exception => e
       puts "Your EC2::Base authentication setup failed with the following message : " + e
       raise e
@@ -267,6 +301,10 @@ module CapsizePlugin
   def get(symbol=nil)
     
     raise Exception if symbol.nil? || symbol.class != Symbol # TODO : Jesse: fixup exceptions in capsize
+    
+    # TODO : Jesse : Jesse, you talked about adding a simple caching layer so 
+    # that calls to get() don't have to be avoided since they hit the filesytem
+    # multiple times per call...  Thoughts?
     
     # populate the OpenStructs with contents of config files so we can query them.
     @secure_config = load_config(:config_file => "config/secure.yml")
