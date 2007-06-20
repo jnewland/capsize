@@ -21,7 +21,13 @@ Capistrano::Configuration.instance.load do
   # TODO : CHANGE THIS TO TARGET_ENV IN HERE AND AMAZON-EC2
   set :deploy_env, ENV['TARGET'] ||= "production"
   
-  # Set the security group name default to the 'default' group.
+  # Set security group operation defaults
   set :group_name, 'default'
+  set :ip_protocol, 'tcp'
+  set :from_port, nil
+  set :to_port, nil
+  set :cidr_ip, '0.0.0.0/0'
+  set :source_security_group_name, nil
+  set :source_security_group_owner_id, nil
   
 end

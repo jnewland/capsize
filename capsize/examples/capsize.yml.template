@@ -27,6 +27,10 @@ common: &common
   # Defaults, appropriately, to 'default' security group.
   #group_name: 'default'
   
+  # Set the default security group ip protocol to apply firewall ingress rules to.  
+  # Defaults, appropriately, to 'tcp'.
+  #ip_protocol: 'tcp'
+  
 development:
   <<: *common
   

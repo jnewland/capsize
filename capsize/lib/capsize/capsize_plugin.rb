@@ -16,9 +16,9 @@ module CapsizePlugin
   #########################################
   
   
-  def get_console_output(args = {})
+  def get_console_output(options = {})
     amazon = connect()
-    options = {:instance_id => ""}.merge(args)
+    options = {:instance_id => ""}.merge(options)
     amazon.get_console_output(:instance_id => options[:instance_id])
   end
   
@@ -28,33 +28,33 @@ module CapsizePlugin
   
   
   #describe your keypairs
-  def describe_keypairs(args = {})
+  def describe_keypairs(options = {})
     amazon = connect()
-    options = {:key_name => []}.merge(args)
+    options = {:key_name => []}.merge(options)
     amazon.describe_keypairs(:key_name => options[:key_name])
   end
   
   
-  #sets up a keypair named args[:key_name] and writes out the private key to args[:key_dir]
-  def create_keypair(args = {})
+  #sets up a keypair named options[:key_name] and writes out the private key to options[:key_dir]
+  def create_keypair(options = {})
     amazon = connect()
     
     # default keyname is the same as our appname, unless specifically overriden in capsize.yml
     # default key dir is config unless specifically overriden in capsize.yml
-    args = {:key_name => "#{application}", :key_dir => "config"}.merge(args)
-    args[:key_name] = @capsize_config.key_name unless @capsize_config.nil? || @capsize_config.key_name.nil? || @capsize_config.key_name.empty?
-    args[:key_dir] = @capsize_config.key_dir unless @capsize_config.nil? || @capsize_config.key_dir.nil? || @capsize_config.key_dir.empty?
+    options = {:key_name => "#{application}", :key_dir => "config"}.merge(options)
+    options[:key_name] = @capsize_config.key_name unless @capsize_config.nil? || @capsize_config.key_name.nil? || @capsize_config.key_name.empty?
+    options[:key_dir] = @capsize_config.key_dir unless @capsize_config.nil? || @capsize_config.key_dir.nil? || @capsize_config.key_dir.empty?
     
     # create the string that represents the full dir/name.key
-    key_file = [args[:key_dir],args[:key_name]].join('/') + '.key'
+    key_file = [options[:key_dir], options[:key_name]].join('/') + '.key'
     
     #verify key_name and key_dir are set
-    raise Exception, "Keypair name required" if args[:key_name].nil? || args[:key_name].empty?
-    raise Exception, "Keypair directory required" if args[:key_dir].nil? || args[:key_dir].empty?
+    raise Exception, "Keypair name required" if options[:key_name].nil? || options[:key_name].empty?
+    raise Exception, "Keypair directory required" if options[:key_dir].nil? || options[:key_dir].empty?
     
     # Verify keypair doesn't already exist either remotely on EC2...
-    unless amazon.describe_keypairs(:key_name => args[:key_name]).keySet.nil?
-      raise Exception, "Sorry, a keypair with the name \"#{args[:key_name]}\" already exists on EC2."
+    unless amazon.describe_keypairs(:key_name => options[:key_name]).keySet.nil?
+      raise Exception, "Sorry, a keypair with the name \"#{options[:key_name]}\" already exists on EC2."
     end
     
     # or exists locally.
@@ -69,7 +69,7 @@ module CapsizePlugin
     
     #All is good, so we create a new keypair
     puts "Generating keypair... (this may take a moment)"
-    private_key = amazon.create_keypair(:key_name => args[:key_name])
+    private_key = amazon.create_keypair(:key_name => options[:key_name])
     puts "A keypair with the name \"#{private_key.keyName}\" has been generated..."
     
     # write private key to file
@@ -87,25 +87,25 @@ module CapsizePlugin
   
   
   # Deletes a keypair from EC2 and from the local filesystem
-  def delete_keypair(args = {})
+  def delete_keypair(options = {})
     amazon = connect()
     
     # TODO : Replace @capsize_config with calls to get()
     # default keyname is the same as our appname, unless specifically overriden in capsize.yml
     # default key dir is config unless specifically overriden in capsize.yml
-    args = {:key_name => "#{application}", :key_dir => "config"}.merge(args)
-    args[:key_name] = @capsize_config.key_name unless @capsize_config.nil? || @capsize_config.key_name.nil? || @capsize_config.key_name.empty?
-    args[:key_dir] = @capsize_config.key_dir unless @capsize_config.nil? || @capsize_config.key_dir.nil? || @capsize_config.key_dir.empty?
+    options = {:key_name => "#{application}", :key_dir => "config"}.merge(options)
+    options[:key_name] = @capsize_config.key_name unless @capsize_config.nil? || @capsize_config.key_name.nil? || @capsize_config.key_name.empty?
+    options[:key_dir] = @capsize_config.key_dir unless @capsize_config.nil? || @capsize_config.key_dir.nil? || @capsize_config.key_dir.empty?
     
     # create the string that represents the full dir/name.key
-    key_file = [args[:key_dir],args[:key_name]].join('/') + '.key'
+    key_file = [options[:key_dir],options[:key_name]].join('/') + '.key'
     
-    raise Exception, "Keypair name required" if args[:key_name].nil?
-    raise Exception, "Keypair dir is required" if args[:key_dir].nil?
-    raise Exception, "Keypair \"#{args[:key_name]}\" does not exist on EC2." if amazon.describe_keypairs(:key_name => args[:key_name]).keySet.nil?
+    raise Exception, "Keypair name required" if options[:key_name].nil?
+    raise Exception, "Keypair dir is required" if options[:key_dir].nil?
+    raise Exception, "Keypair \"#{options[:key_name]}\" does not exist on EC2." if amazon.describe_keypairs(:key_name => options[:key_name]).keySet.nil?
     
-    amazon.delete_keypair(:key_name => args[:key_name])
-    puts "Keypair \"#{args[:key_name]}\" deleted from EC2!"
+    amazon.delete_keypair(:key_name => options[:key_name])
+    puts "Keypair \"#{options[:key_name]}\" deleted from EC2!"
     
     File.delete(key_file)
     puts "Keypair \"#{key_file}\" deleted from local file system!"
@@ -118,9 +118,9 @@ module CapsizePlugin
   
   
   #describe the amazon machine images available for launch
-  def describe_images(args = {})
+  def describe_images(options = {})
     amazon = connect()
-    options = {:image_id => [], :owner_id => [], :executable_by => []}.merge(args)
+    options = {:image_id => [], :owner_id => [], :executable_by => []}.merge(options)
     amazon.describe_images(:image_id => options[:image_id], :owner_id => options[:owner_id], :executable_by => options[:executable_by])
   end
   
@@ -130,9 +130,9 @@ module CapsizePlugin
   
   
   #returns information about instances owned by the user
-  def describe_instances(args = {})
+  def describe_instances(options = {})
     amazon = connect()
-    options = {:instance_id => []}.merge(args)
+    options = {:instance_id => []}.merge(options)
     amazon.describe_instances(:instance_id => options[:instance_id])
   end
   
@@ -141,17 +141,17 @@ module CapsizePlugin
   #requires options[:keypair_name] and options[:image_id]
   #userdata may also passed to this instance with options[:user_data].
   #specifiy if this data is base_64 encoded with the boolean options[:base64_encoded]
-  def run_instance(args = {})
+  def run_instance(options = {})
     amazon = connect()
     
     #verify keypair_name and ami_id passed
-    raise Exception, "Keypair name required" if args[:keypair_name].nil? || args[:keypair_name].empty?
-    raise Exception, "AMI id required" if args[:image_id].nil? || args[:image_id].empty?
+    raise Exception, "Keypair name required" if options[:keypair_name].nil? || options[:keypair_name].empty?
+    raise Exception, "AMI id required" if options[:image_id].nil? || options[:image_id].empty?
     
-    response = amazon.run_instances(args)
+    response = amazon.run_instances(options)
     raise Exception, "Instance did not start" unless response.instancesSet.item[0].instanceState.name == "pending"
     instance_id = response.instancesSet.item[0].instanceId
-    puts "Instance #{instance_id} Startup Pending"
+    puts "Instance #{instance_id} startup pending"
     
     #loop checking for instance startup
     puts "Checking every 10 seconds to detect startup for up to 5 minutes"
@@ -172,18 +172,18 @@ module CapsizePlugin
   
   
   #reboot a running instance
-  def reboot_instance(args = {})
+  def reboot_instance(options = {})
     amazon = connect()
-    options = {:instance_id => []}.merge(args)
+    options = {:instance_id => []}.merge(options)
     raise Exception, ":instance_id required" if options[:instance_id].nil?
     amazon.reboot_instances(:instance_id => options[:instance_id])
   end
   
   
   #terminates a running instance
-  def terminate_instance(args = {})
+  def terminate_instance(options = {})
     amazon = connect()
-    options = {:instance_id => []}.merge(args)
+    options = {:instance_id => []}.merge(options)
     raise Exception, ":instance_id required" if options[:instance_id].nil?
     amazon.terminate_instances(:instance_id => options[:instance_id])
   end
@@ -195,22 +195,22 @@ module CapsizePlugin
   
   # Define firewall access rules for a specific security group.  Instances will inherit
   # the security group permissions based on the group they are assigned to.
-  def authorize_ingress(args = {})
+  def authorize_ingress(options = {})
     amazon = connect()
     
     options = { :group_name => get(:group_name),
-                :ip_protocol => 'tcp',
-                :from_port => nil,
-                :to_port => nil,
-                :cidr_ip => '0.0.0.0/0',
-                :source_security_group_name => "",
-                :source_security_group_owner_id => "" }.merge(args)
+                :ip_protocol => get(:ip_protocol),
+                :from_port => get(:from_port),
+                :to_port => get(:to_port),
+                :cidr_ip => get(:cidr_ip),
+                :source_security_group_name => get(:source_security_group_name),
+                :source_security_group_owner_id => get(:source_security_group_owner_id) }.merge(options)
     
     # Verify only that :group_name is passed.  This is the only REQUIRED parameter.
     # The others are optional and depend on what it is you are trying to 
     # do (CIDR based permissions vs. user/group pair permissions).  We let the EC2
     # service itself do the validations on the extra params and count on it to raise an exception
-    # if it doesn't like the args passed.  We'll see an EC2::Exception class returned if so.
+    # if it doesn't like the options passed.  We'll see an EC2::Exception class returned if so.
     raise Exception, "You must specify a :group_name" if options[:group_name].nil? || options[:group_name].empty?
     
     # set the :to_port to the same value as :from_port if :to_port was not explicitly defined.
@@ -226,22 +226,22 @@ module CapsizePlugin
   
   # Revoke firewall access rules for a specific security group.  Instances will inherit
   # the security group permissions based on the group they are assigned to.
-  def revoke_ingress(args = {})
+  def revoke_ingress(options = {})
     amazon = connect()
     
     options = { :group_name => get(:group_name),
-                :ip_protocol => 'tcp',
-                :from_port => nil,
-                :to_port => nil,
-                :cidr_ip => '0.0.0.0/0',
-                :source_security_group_name => "",
-                :source_security_group_owner_id => "" }.merge(args)
+                :ip_protocol => get(:ip_protocol),
+                :from_port => get(:from_port),
+                :to_port => get(:to_port),
+                :cidr_ip => get(:cidr_ip),
+                :source_security_group_name => get(:source_security_group_name),
+                :source_security_group_owner_id => get(:source_security_group_owner_id) }.merge(options)
     
     # Verify only that :group_name is passed.  This is the only REQUIRED parameter.
     # The others are optional and depend on what it is you are trying to 
     # do (CIDR based permissions vs. user/group pair permissions).  We let the EC2
     # service itself do the validations on the extra params and count on it to raise an exception
-    # if it doesn't like the args passed.  We'll see an EC2::Exception class returned if so.
+    # if it doesn't like the options passed.  We'll see an EC2::Exception class returned if so.
     raise Exception, "You must specify a :group_name" if options[:group_name].nil? || options[:group_name].empty?
     
     # set the :to_port to the same value as :from_port if :to_port was not explicitly defined.
@@ -257,10 +257,8 @@ module CapsizePlugin
   
   # CAPSIZE HELPER METHODS
   #########################################
-  # call these from tasks with 'capsize.method_name'
-  
+  # call these from tasks.rb with 'capsize.method_name'
   # returns an EC2::Base object
-  #  * connect(args = {:access_key_id => "my_access_key_id", :secret_access_key => "my_secret_access_key"})
   def connect()
     
     # get the :use_ssl value from the config pool and set it if its available
@@ -345,12 +343,13 @@ module CapsizePlugin
   
   
   # load specified ":config_file => 'foo.yaml'" into a OpenStruct object and return it. 
-  def load_config(args = {})
-    args = {:config_file => ""}.merge(args)
-    raise Exception, "Config file location required" if args[:config_file].nil? || args[:config_file].empty?
+  def load_config(options = {})
+    options = {:config_file => ""}.merge(options)
     
-    if File.exist?(args[:config_file])
-      config = OpenStruct.new(YAML.load_file(args[:config_file]))
+    raise Exception, "Config file location required" if options[:config_file].nil? || options[:config_file].empty?
+    
+    if File.exist?(options[:config_file])
+      config = OpenStruct.new(YAML.load_file(options[:config_file]))
       env_config =  OpenStruct.new(config.send(deploy_env))
       
       # Send back an empty OpenStruct if we can't load the config file.
