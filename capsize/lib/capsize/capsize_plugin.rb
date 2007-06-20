@@ -179,6 +179,15 @@ module CapsizePlugin
   end
   
   
+  #reboot a running instance
+  def reboot_instance(args = {})
+    amazon = connect()
+    options = {:instance_id => []}.merge(args)
+    raise Exception, ":instance_id required" if options[:instance_id].nil?
+    amazon.reboot_instances(:instance_id => options[:instance_id])
+  end
+  
+  
   #terminates a running instance
   def terminate_instance(args = {})
     amazon = connect()
@@ -324,6 +333,10 @@ module CapsizePlugin
   # maintain a sort of database without any of the dependencies of a DB?  Not really fleshed out.  Just
   # putting this here as a reminder as something to think about??
   
+  # TODO : A question for Jesse.  Can you elaborate on why its better for this to be here instead of in tasks.rb?
+  # I see it does clean up tasks, but were not really making anythiing more DRY since we either have the code here
+  # or there.  And we lose the consistency of this type of code all being in tasks.rb.
+  # Doesn't really matter too much I guess, just wanted to learn from your thinking...
   def print_instance_description(result = nil)
     puts "" if result.nil?
     unless result.reservationSet.nil?
@@ -361,7 +374,6 @@ module CapsizePlugin
       puts "You don't own any running or pending instances"
     end
   end
-  
   
   
 end

@@ -103,6 +103,8 @@ Capistrano::Configuration.instance.load do
     
     namespace :instances do
       
+      # TODO : keypairs:create automatically saves the key pair with the name of the application in the config dir.  We
+      # should make it so that it uses that if it exists, and only get() it from the config if that is not found?
       desc <<-DESC
       Runs an instance of aws_ami_id with aws_keypair_name.
       DESC
@@ -115,12 +117,11 @@ Capistrano::Configuration.instance.load do
         set_default_roles_to_target_role
       end
       
-      desc "Terminate a specific instance."
       desc <<-DESC
-      Terminates a specific instance.
+      Terminate an EC2 instance.
       You can terminate a specific instance by doing one of the following:
       - define an :instance_id in deploy.rb with "set :instance_id, 'i-123456'"
-      - Overide this on the command line with "cap ec2:terminate_instance INSTANCE_ID='i-123456'"
+      - Overide this on the command line with "cap ec2:instances:terminate INSTANCE_ID='i-123456'"
       - If neither of these are provided you will be prompted by Capistano for the instance ID you wish to terminate.
       DESC
       task :terminate do
@@ -142,6 +143,37 @@ Capistrano::Configuration.instance.load do
             end
           else
             puts "Your terminate instance request has been cancelled."
+          end
+        end
+      end
+      
+      
+      desc <<-DESC
+      Reboot an EC2 instance.
+      You can reboot a specific instance by doing one of the following:
+      - define an :instance_id in deploy.rb with "set :instance_id, 'i-123456'"
+      - Overide this on the command line with "cap ec2:instances:reboot INSTANCE_ID='i-123456'"
+      - If neither of these are provided you will be prompted by Capistano for the instance ID you wish to reboot.
+      DESC
+      task :reboot do
+        
+        capsize.get(:instance_id)
+        
+        case instance_id
+        when nil, ""
+          puts "You don't seem to have set an instance ID..."
+        else
+          confirm = (Capistrano::CLI.ui.ask("REALLY reboot instance #{instance_id}? (y/N): ").downcase == 'y')
+          if confirm
+            begin
+              response = capsize.reboot_instance({:instance_id => instance_id})
+              puts "The request to reboot instance_id #{instance_id} has been accepted.  Monitor the status of the request with 'cap ec2:instances:describe'"
+            rescue Exception => e
+              puts "The attempt to reboot the instance failed with error : " + e
+              raise e
+            end
+          else
+            puts "Your reboot instance request has been cancelled."
           end
         end
       end
