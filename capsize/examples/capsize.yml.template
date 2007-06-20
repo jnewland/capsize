@@ -19,6 +19,10 @@ common: &common
   #defaults to 'config'.  Must not have trailing slash
   #key_dir: 'config'
   
+  # use an ssl connection to talk to EC2? true or false allowed (no quotes)
+  # Defaults to true
+  #capsize_use_ssl: true
+  
 development:
   <<: *common
   

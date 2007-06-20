@@ -216,83 +216,84 @@ module CapsizePlugin
   #########################################
   # call these from tasks with 'capsize.method_name'
   
-  # returns an EC2::AWSAuthConnection object
-  # accepts authentication in 3 forms:
+  # returns an EC2::Base object
   #  * connect(args = {:access_key_id => "my_access_key_id", :secret_access_key => "my_secret_access_key"})
-  #  * config/secure_config.yml
-  #  * ENV['AMAZON_ACCESS_KEY_ID'], ENV['AMAZON_SECRET_ACCESS_KEY']
-  def connect(args = {})
+  def connect()
     
-    raise Exception, "You must have an :aws_access_key_id defined." if get(:aws_access_key_id).nil? || get(:aws_access_key_id).empty?
-    raise Exception, "You must have an :aws_secret_access_key defined." if get(:aws_secret_access_key).nil? || get(:aws_secret_access_key).empty?
+    # get the :use_ssl value from the config pool and set it if its available
+    # this will allow users to globally override whether or not their connection
+    # is made via SSL in their config files or deploy.rb.  Of course default to using SSL.
+    case get(:capsize_use_ssl)
+    when true, nil
+      set :capsize_use_ssl, true
+    when false
+      set :capsize_use_ssl, false
+    else
+      raise Exception, "You have an invalid value in your config for :capsize_use_ssl. Must be 'true' or 'false'."
+    end
+    
+    # Optimized so we don't read the config files six times just to connect.
+    # Read once, set it, and re-use what we get back...
+    set :aws_access_key_id, get(:aws_access_key_id)
+    set :aws_secret_access_key, get(:aws_secret_access_key)
+    
+    raise Exception, "You must have an :aws_access_key_id defined in your config." if fetch(:aws_access_key_id).nil? || fetch(:aws_access_key_id).empty?
+    raise Exception, "You must have an :aws_secret_access_key defined in your config." if fetch(:aws_secret_access_key).nil? || fetch(:aws_secret_access_key).empty?
     
     begin
-      amazon = EC2::AWSAuthConnection.new(:access_key_id => get(:aws_access_key_id), :secret_access_key => get(:aws_secret_access_key))
-    rescue EC2::Exception => e
-      puts "Your EC2 authentication setup failed with the following message : " + e
+      return amazon = EC2::Base.new(:access_key_id => get(:aws_access_key_id), :secret_access_key => get(:aws_secret_access_key), :use_ssl => capsize_use_ssl)
+    rescue Exception => e
+      puts "Your EC2::Base authentication setup failed with the following message : " + e
       raise e
     end
   end
   
   # capsize.get(:symbol_name) checks for variables in several places, with this precedence (from low to high):
-  # * default capistrano or capsize set variables
+  # * default capistrano or capsize set variables (available with fetch())
   # * Set in config/secure_config.yml (overwrites previous)
   # * Set in config/capsize_config.yml (overwrites previous)
   # * Passed in as part of the command line params and available as ENV["SYMBOL_NAME"] (overwrites previous)
-  # * If all of the above return nil, get response to command line prompt for this variable
+  # * If all of the above are nil, get response at a command line prompt for this variable
   #
   def get(symbol=nil)
+    
     raise Exception if symbol.nil? || symbol.class != Symbol # TODO : Jesse: fixup exceptions in capsize
     
     # populate the OpenStructs with contents of config files so we can query them.
     @secure_config = load_config(:config_file => "config/secure.yml")
     @capsize_config = load_config(:config_file => "config/capsize.yml")
     
-    # TODO : I have not had a chance to really test this yet, but I am thinking that
-    # calling fetch each time for each of these possible config sources 
-    # is not the right thing.  Perhaps instead for each possible source in the
-    # config hierarchy (see comments above get() method) we should just set()
-    # each time.  e.g. if :foo is present in secure.yml, but :foo is also present
-    # in capsize.yml then whatever the value of :foo is in capsize.yml would overwrite
-    # what is in secure.yml.  And an ENV variable ENV['FOO'] if it exists would
-    # overwrite anything set in the previous two.  Otherwise, I think the way we
-    # have it right now, each fetch will only return what was set by the first 
-    # place where that config was successfully found.  No?
-    #
-    # Q #2:  Is this the right hierarchy we should follow (from low to high priority):
-    # - default plugin or cap provided values
-    # - secure
-    # - config
-    # - ENV[]
-    # - command line prompt
-    # 
-    
-    # get var from default capsize or default capistrano set vars
-    set symbol, fetch(symbol, "")
+    # fetch var from default capsize or default capistrano config vars, 
+    # and if it doesn't exist set it to nil
+    set symbol, fetch(symbol, nil)
     
     # if symbol exists as a var in the secure config, then set it to that
+    # overriding default cap or capsize config vars
     if @secure_config.respond_to?(symbol)
-      set symbol, fetch(symbol) { @secure_config.send(symbol) }
+      set symbol, @secure_config.send(symbol)
     end
     
-    # if symbol exists as a var in the capsize config, then set it to that
+    # if symbol exists as a var in the standard capsize config, then set it to that
+    # overriding secure config vars
     if @capsize_config.respond_to?(symbol)
-      set symbol, fetch(symbol) { @capsize_config.send(symbol) }
+      set symbol, @capsize_config.send(symbol)
     end
     
-    # if ENV["SYMBOL_NAME"] isn't nil and symbol_name isn't already set, set it to ENV["SYMBOL_NAME"]
+    # if ENV["SYMBOL_NAME"] isn't nil set it to ENV["SYMBOL_NAME"]
+    # ENV vars passed on the command line override any previously defined vars
     unless ENV[symbol.to_s.upcase].nil?
-      set symbol, fetch(symbol) { ENV[symbol.to_s.upcase] }
+      set symbol, ENV[symbol.to_s.upcase]
     end
     
-    # finally if sybmol_name isn't already set, prompt the user
+    # finally if symbol name is still nil then prompt the user for it and set it.
     set symbol, fetch(symbol) {Capistrano::CLI.ui.ask("Please enter a value for #{symbol.to_s}: ")}
     
-    #DRY up variable checking. If this was asked for, it was needed.
-    raise Exception, "Unable to get() the configuration variable #{symbol.to_s}" if fetch(symbol).empty? # TODO : Jesse: fixup exceptions in capsize 
-    
-    #return the variable
+    # If we have a good set variable then return that variable, else send back a nil
+    # if that's what we get and let the calling method either raise an exception 
+    # or determine how to gracefully handle it.  We don't want to raise an exception every 
+    # time a get fails.  nil might be a good answer for some questions? no?
     return fetch(symbol)
+    
   end
   
   
