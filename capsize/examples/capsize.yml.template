@@ -13,16 +13,24 @@
 # ALL environments.  This helps us keep this file nice and DRY.
 common: &common
   
+  # KEYPAIR CONFIG
+  ##########################################################
   #defaults to the name of the :application set in deploy.rb
   #key_name: 'my_cool_key_name'
   
   #defaults to 'config'.  Must not have trailing slash
   #key_dir: 'config'
   
+  
+  # CAPSIZE CONFIG
+  ##########################################################
   # use an ssl connection to talk to EC2? true or false allowed (no quotes)
   # Defaults to true
   #use_ssl: true
   
+  
+  # SECURITY GROUP CONFIG
+  ##########################################################
   # Set the default security group to apply firewall ingress rules to.  
   # Defaults, appropriately, to 'default' security group.
   #group_name: 'default'
@@ -30,6 +38,14 @@ common: &common
   # Set the default security group ip protocol to apply firewall ingress rules to.  
   # Defaults, appropriately, to 'tcp'.
   #ip_protocol: 'tcp'
+  
+  # other options you can override if needed
+  #from_port: nil
+  #to_port: nil
+  #cidr_ip: '0.0.0.0/0'
+  #source_security_group_name: nil
+  #source_security_group_owner_id: nil
+  
   
 development:
   <<: *common

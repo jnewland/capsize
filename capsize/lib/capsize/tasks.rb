@@ -14,6 +14,12 @@ Capistrano::Configuration.instance.load do
   namespace :ec2 do
     
     
+    # SSH TASKS
+    #########################################
+    
+    # TODO : Add a task that will let you SSH to a specific instance ID using public key auth.
+    # example connect :  ssh -i config/elasticworkbench.key root@ec2-72-44-51-229.z-1.compute-1.amazonaws.com
+    
     # CONSOLE TASKS
     #########################################
     
@@ -22,7 +28,7 @@ Capistrano::Configuration.instance.load do
       desc <<-DESC
       Show instance console output.
       You can view the console of a specific instance by doing one of the following:
-      - define an :instance_id in deploy.rb with "set :instance_id, 'i-123456'"
+      - define an :instance_id in any Capsize config file with "set :instance_id, 'i-123456'"
       - Overide this on the command line with "cap ec2:console:output INSTANCE_ID='i-123456'"
       - If neither of these are provided you will be prompted by Capistano for the instance ID you wish to terminate.
       DESC
@@ -54,13 +60,28 @@ Capistrano::Configuration.instance.load do
     
     namespace :keypairs do
       
-      # TODO : ADD FULL CAP -E DOCS HERE
-      desc "Describes your keypairs."
+      desc <<-DESC
+      Describes your keypairs.
+      This will return a text description of all of your personal keypairs created on EC2.
+      Remember that these keypairs are only usable if you have the private key material stored locally
+      and you specify this keypair as part of the run instances command.  Only then will you be able to
+      take advantage of logging into remote servers using public key authentication.  This command 
+      will also display whether you have a locally installed private key that matches the key_name of
+      the public key being described.
+      DESC
       task :describe do
         begin
-            capsize.describe_keypairs().keySet.item.each do |item|
-            puts "keyName = " + item.keyName
-            puts "keyFingerprint = " + item.keyFingerprint
+          capsize.describe_keypairs().keySet.item.each do |item|
+            puts "[#{item.keyName}] : keyName = " + item.keyName
+            puts "[#{item.keyName}] : keyFingerprint = " + item.keyFingerprint
+            
+            # tell them if they have the matching private key stored locally and available
+            key_name = item.keyName
+            key_dir = capsize.get(:key_dir) unless capsize.get(:key_dir).nil? || capsize.get(:key_dir).empty?
+            key_file = [key_dir, key_name].join('/') + '.key'
+            
+            puts "[#{item.keyName}] : OK : matching local private key found @ #{key_file}" if File.exists?(key_file)
+            puts "[#{item.keyName}] : WARNING : matching local private key NOT found @ #{key_file}" unless File.exists?(key_file)
             puts "" 
           end
         rescue Exception => e
@@ -70,8 +91,23 @@ Capistrano::Configuration.instance.load do
       end
       
       
-      # TODO : ADD FULL CAP -E DOCS HERE
-      desc "Create and store a new keypair."
+      desc <<-DESC
+      Create and store a new keypair.
+      This command will generate a new keypair for you on EC2 and will also
+      save a local copy of your private key in the filepath specified by
+      KEY_DIR and KEY_NAME.  By default the keypair will be named the
+      same as your Capistrano application name, and the private key will
+      be stored at 'config/<appname>.key'.  If a keypair already exists
+      on the EC2 servers or locally with the same name it will not be
+      overwritten.
+      
+      WARNING : Keypair private keys should be protected the same as passwords.
+      If you have specified a key_name to use when running instances anyone who 
+      has access to your keypair private key file contents and who knows the 
+      public DNS name of your servers may be able to login to those servers 
+      without providing a password.  Use caution when storing the private key file
+      in source code control systems, and keep a backup of your private key file.
+      DESC
       task :create do
         begin
           capsize.create_keypair()
@@ -82,11 +118,31 @@ Capistrano::Configuration.instance.load do
       end
       
       
-      # TODO : ADD FULL CAP -E DOCS HERE
-      desc "Delete a keypair from EC2 and local files."
+      # TODO : this should be able to delete any keypair, not just the default one!
+      desc <<-DESC
+      Delete a keypair.
+      This command will delete a keypair from EC2 and will also
+      delete the local copy of your private key in the filepath specified by
+      KEY_DIR and KEY_NAME.  By default the keypair deleted will be named the
+      same as your Capistrano application name, and the private key will
+      be deleted from 'config/<appname>.key'.  You will be prompted to confirm
+      deletion of your keypair before the action will proceed.
+      
+      WARNING : Don't delete keypairs which may be associated with
+      running instances on EC2.  If you do so you may lose the ability
+      to access these servers via SSH and Capistrano!  Your last resort in 
+      this case may be to terminate those running servers.
+      DESC
       task :delete do
         
-        confirm = (Capistrano::CLI.ui.ask("REALLY delete keypair for this application?  You will no longer be able to access any running instances!? (y/N): ").downcase == 'y')
+        unless capsize.get(:key_name).nil? || capsize.get(:key_name).empty?
+          key_name = capsize.get(:key_name)
+        else
+          key_name = "#{application}"
+        end
+        
+        confirm = (Capistrano::CLI.ui.ask("WARNING! Are you sure you want to delete the local and remote parts of the keypair with the name \"#{key_name}\"?\nYou will no longer be able to access any running instances that depend on this keypair!? (y/N): ").downcase == 'y')
+        
         if confirm
           begin
             capsize.delete_keypair()
@@ -105,20 +161,45 @@ Capistrano::Configuration.instance.load do
     
     namespace :instances do
       
+      
       # TODO : keypairs:create automatically saves the key pair with the name of the application in the config dir.  We
       # should make it so that it uses that if it exists, and only get() it from the config if that is not found?
       # TODO : ADD FULL CAP -E DOCS HERE
       desc <<-DESC
-      Runs an instance of aws_ami_id with aws_keypair_name.
+      Runs an instance of :image_id with the keypair :key_name.
       DESC
       task :run do
-        response = capsize.run_instance({:image_id => capsize.get(:aws_ami_id), :keypair_name => capsize.get(:aws_keypair_name)})
-        capsize.print_instance_description(response)
-        set(:aws_instance_id, response.reservationSet.item[0].instancesSet.item[0].instanceId)
-        set(:aws_hostname, response.reservationSet.item[0].instancesSet.item[0].dnsName)
-        set(:target_role, aws_hostname)
-        set_default_roles_to_target_role
+        begin
+          
+          response = capsize.run_instance
+          
+          puts "An instance has been started with the following metadata:"
+          capsize.print_instance_description(response)
+          
+          # TODO : FIX this SSH string so it matches their key info and the host that was started
+          #puts "You should be able to connect via SSH without specifying a password with a command like:"
+          #puts "  ssh -i config/elasticworkbench.key root@ec2-72-44-51-229.z-1.compute-1.amazonaws.com"
+          
+          # TODO : Tell the user exactly what they need to put in their deploy.rb
+          # to make the control of their server instances persistent!
+          #capsize.print_config_instructions(:response => response)
+          
+          # TODO : I think this (set_default_roles_to_target_role) is only good if we are only 
+          # dealing with one server.  But the values are temporary.  How should we handle multiple 
+          # instances starting that need to be controlled?  How should we handle storing this important data
+          # more persistently??
+          #
+          # override the roles set in deploy.rb with the server instance started here.
+          # This is temporary and only remains defined for the length of this 
+          # capistrano run!
+          set(:dns_name, response.reservationSet.item[0].instancesSet.item[0].dnsName)
+          set_default_roles_to_target_role
+          
+        rescue Exception => e
+          puts "The attempt to run an instance failed with the error : " + e
+        end
       end
+      
       
       desc <<-DESC
       Terminate an EC2 instance.
@@ -135,7 +216,7 @@ Capistrano::Configuration.instance.load do
         when nil, ""
           puts "You don't seem to have set an instance ID..."
         else
-          confirm = (Capistrano::CLI.ui.ask("REALLY terminate instance #{instance_id}? (y/N): ").downcase == 'y')
+          confirm = (Capistrano::CLI.ui.ask("WARNING! Really terminate instance \"#{instance_id}\"? (y/N): ").downcase == 'y')
           if confirm
             begin
               response = capsize.terminate_instance({:instance_id => instance_id})
@@ -166,13 +247,13 @@ Capistrano::Configuration.instance.load do
         when nil, ""
           puts "You don't seem to have set an instance ID..."
         else
-          confirm = (Capistrano::CLI.ui.ask("REALLY reboot instance #{instance_id}? (y/N): ").downcase == 'y')
+          confirm = (Capistrano::CLI.ui.ask("WARNING! Really reboot instance \"#{instance_id}\"? (y/N): ").downcase == 'y')
           if confirm
             begin
               response = capsize.reboot_instance({:instance_id => instance_id})
-              puts "The request to reboot instance_id #{instance_id} has been accepted.  Monitor the status of the request with 'cap ec2:instances:describe'"
+              puts "The request to reboot instance_id \"#{instance_id}\" has been accepted.  Monitor the status of the request with 'cap ec2:instances:describe'"
             rescue Exception => e
-              puts "The attempt to reboot the instance failed with error : " + e
+              puts "The attempt to reboot the instance_id \"#{instance_id}\" failed with error : " + e
               raise e
             end
           else
@@ -250,6 +331,9 @@ Capistrano::Configuration.instance.load do
     end
     
     
+    # TODO : ADD DESCRIBE SECURITY GROUPS TASK AND PLUGIN METHOD!
+    
+    
     # IMAGE TASKS
     #########################################
     
@@ -306,18 +390,19 @@ Capistrano::Configuration.instance.load do
       system "ssh -o StrictHostKeyChecking=no -i #{aws_private_key_path} root@#{aws_hostname} 'umask 02 && mkdir -p #{deploy_to} && chown #{user}:wheel #{deploy_to}'"
     end
       
-    
-    # CAPISTRANO TASKS
-    #########################################
-    
-    # This helper method is called in instances:run to set the default roles to the newly spawned EC2 instance
-    # no desc "" so this method does not show up in 'cap -T' listing as it should not be called directly.
-    task :set_default_roles_to_target_role do
-      role :web, target_role
-      role :app, target_role
-      role :db, target_role, :primary => true
-    end
+  end # end namespace :ec2
   
+  # This helper method is called in instances:run to set the default roles to 
+  # the newly spawned EC2 instance.
+  #
+  # no desc "" is provided to ensure this method does not show up in 'cap -T' 
+  # listing as it generally would not be called directly.
+  # Hack? : This method must be defined outside of a namespace or it will raise an exception!
+  #
+  task :set_default_roles_to_target_role do
+    role :web, dns_name
+    role :app, dns_name
+    role :db, dns_name, :primary => true
   end
   
-end
+end # end Capistrano::Configuration.instance.load

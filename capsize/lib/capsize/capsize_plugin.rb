@@ -40,24 +40,25 @@ module CapsizePlugin
     amazon = connect()
     
     # default keyname is the same as our appname, unless specifically overriden in capsize.yml
-    # default key dir is config unless specifically overriden in capsize.yml
-    options = {:key_name => "#{application}", :key_dir => "config"}.merge(options)
-    options[:key_name] = @capsize_config.key_name unless @capsize_config.nil? || @capsize_config.key_name.nil? || @capsize_config.key_name.empty?
-    options[:key_dir] = @capsize_config.key_dir unless @capsize_config.nil? || @capsize_config.key_dir.nil? || @capsize_config.key_dir.empty?
+    # default key dir is 'config' unless overridden
+    options = {:key_name => "#{application}", :key_dir => nil}.merge(options)
     
-    # create the string that represents the full dir/name.key
-    key_file = [options[:key_dir], options[:key_name]].join('/') + '.key'
+    options[:key_name] = get(:key_name) unless get(:key_name).nil? || get(:key_name).empty?
+    options[:key_dir] = get(:key_dir) unless get(:key_dir).nil? || get(:key_dir).empty?
     
     #verify key_name and key_dir are set
     raise Exception, "Keypair name required" if options[:key_name].nil? || options[:key_name].empty?
     raise Exception, "Keypair directory required" if options[:key_dir].nil? || options[:key_dir].empty?
     
-    # Verify keypair doesn't already exist either remotely on EC2...
+    # create the string that represents the full 'key_dir/key_name.key'
+    key_file = [options[:key_dir], options[:key_name]].join('/') + '.key'
+    
+    # Verify keypair doesn't already exist on EC2 servers...
     unless amazon.describe_keypairs(:key_name => options[:key_name]).keySet.nil?
       raise Exception, "Sorry, a keypair with the name \"#{options[:key_name]}\" already exists on EC2."
     end
     
-    # or exists locally.
+    # and doesn't exist locally either...
     file_exists_message = <<-MESSAGE
     \n
     Warning! A keypair with the name \"#{key_file}\"
@@ -67,18 +68,22 @@ module CapsizePlugin
     MESSAGE
     raise Exception, file_exists_message if File.exists?(key_file)
     
-    #All is good, so we create a new keypair
-    puts "Generating keypair... (this may take a moment)"
+    #All is good, so we create the new keypair
+    puts "Generating keypair... (this may take a few seconds)"
     private_key = amazon.create_keypair(:key_name => options[:key_name])
     puts "A keypair with the name \"#{private_key.keyName}\" has been generated..."
     
     # write private key to file
     File.open(key_file, 'w') do |file|
       file.write(private_key.keyMaterial)
-      file.write("\n\nfingerprint:\n" + private_key.keyFingerprint)
-      file.write("\n\nname:\n" + private_key.keyName)
+      #file.write("\n\nfingerprint:\n" + private_key.keyFingerprint)
+      #file.write("\n\nname:\n" + private_key.keyName)
     end
     puts "The generated private key has been saved in #{key_file}"
+    
+    # store the key_file path so other tasks in capistrano running in sequence with this
+    # task will be able to utilize it.
+    set :key_file, key_file
     
     # Cross platform CHMOD
     File.chmod 0600, key_file
@@ -90,19 +95,20 @@ module CapsizePlugin
   def delete_keypair(options = {})
     amazon = connect()
     
-    # TODO : Replace @capsize_config with calls to get()
-    # default keyname is the same as our appname, unless specifically overriden in capsize.yml
-    # default key dir is config unless specifically overriden in capsize.yml
-    options = {:key_name => "#{application}", :key_dir => "config"}.merge(options)
-    options[:key_name] = @capsize_config.key_name unless @capsize_config.nil? || @capsize_config.key_name.nil? || @capsize_config.key_name.empty?
-    options[:key_dir] = @capsize_config.key_dir unless @capsize_config.nil? || @capsize_config.key_dir.nil? || @capsize_config.key_dir.empty?
+    # default key_name is the same as our appname, unless specifically overriden
+    # default key_dir is 'config' unless specifically overriden
+    options = {:key_name => "#{application}", :key_dir => nil}.merge(options)
+    
+    options[:key_name] = get(:key_name) unless get(:key_name).nil? || get(:key_name).empty?
+    options[:key_dir] = get(:key_dir) unless get(:key_dir).nil? || get(:key_dir).empty?
+    
+    # verify key_name and key_dir are set
+    raise Exception, "Keypair name required" if options[:key_name].nil? || options[:key_name].empty?
+    raise Exception, "Keypair directory required" if options[:key_dir].nil? || options[:key_dir].empty?
+    raise Exception, "Keypair \"#{options[:key_name]}\" does not exist on EC2." if amazon.describe_keypairs(:key_name => options[:key_name]).keySet.nil?
     
     # create the string that represents the full dir/name.key
     key_file = [options[:key_dir],options[:key_name]].join('/') + '.key'
-    
-    raise Exception, "Keypair name required" if options[:key_name].nil?
-    raise Exception, "Keypair dir is required" if options[:key_dir].nil?
-    raise Exception, "Keypair \"#{options[:key_name]}\" does not exist on EC2." if amazon.describe_keypairs(:key_name => options[:key_name]).keySet.nil?
     
     amazon.delete_keypair(:key_name => options[:key_name])
     puts "Keypair \"#{options[:key_name]}\" deleted from EC2!"
@@ -137,37 +143,80 @@ module CapsizePlugin
   end
   
   
-  #run an EC2 instance
-  #requires options[:keypair_name] and options[:image_id]
-  #userdata may also passed to this instance with options[:user_data].
-  #specifiy if this data is base_64 encoded with the boolean options[:base64_encoded]
+  # Run EC2 instance(s)
+  # TODO : Deal with starting multiple instances!  Now only single instances are properly handled.
   def run_instance(options = {})
     amazon = connect()
     
-    #verify keypair_name and ami_id passed
-    raise Exception, "Keypair name required" if options[:keypair_name].nil? || options[:keypair_name].empty?
-    raise Exception, "AMI id required" if options[:image_id].nil? || options[:image_id].empty?
+    options = { :image_id => get(:image_id),
+                :min_count => get(:min_count),
+                :max_count => get(:max_count),
+                :key_name => "#{application}",
+                :group_name => get(:group_name),
+                :user_data => get(:user_data),
+                :addressing_type => get(:addressing_type)
+              }.merge(options)
     
+    # We want to run the new instance using our public/private keypair if
+    # one is defined for this application or of the user has explicitly passed
+    # in a key_name as a parameter.  Only allow use of application name keyname if
+    # the <application> name is defined on EC2 as a key_name, AND we have the local
+    # private key stored in the config dir.
+    
+    # override application key_name if the user provided one in config or on the command line
+    options[:key_name] = get(:key_name) unless get(:key_name).nil? || get(:key_name).empty?
+    
+    # key_dir defaults to config in capsize/configuration.rb
+    options[:key_dir] = get(:key_dir) unless get(:key_dir).nil? || get(:key_dir).empty?
+    
+    # create the string that represents the joined key_dir/key_name.key filename
+    key_file = [options[:key_dir], options[:key_name]].join('/') + '.key'
+    
+    # don't let them go further if there is no private key present.
+    raise Exception, "Private key is not present in #{key_file}.\nPlease generate one with 'cap ec2:keypairs:create' or specify a different KEY_NAME." unless File.exists?(key_file)
+    
+    # Verify image_id, min_count, and max_count are present as these are required
+    raise Exception, "Image ID (ami-) required" if options[:image_id].nil? || options[:image_id].empty?
+    raise Exception, "Min count is required" if options[:min_count].nil?
+    raise Exception, "Max count is required" if options[:max_count].nil?
+    
+    # Start instance(s)!
     response = amazon.run_instances(options)
-    raise Exception, "Instance did not start" unless response.instancesSet.item[0].instanceState.name == "pending"
-    instance_id = response.instancesSet.item[0].instanceId
-    puts "Instance #{instance_id} startup pending"
     
-    #loop checking for instance startup
-    puts "Checking every 10 seconds to detect startup for up to 5 minutes"
+    instance_id = response.instancesSet.item[0].instanceId
+    puts "Instance #{instance_id} startup in progress..."
+    
+    # loop checking for instance pending notification
+    puts "Checking every 10 seconds to detect startup state of 'pending' for up to 5 minutes"
+    tries = 0
+    begin
+      instance = amazon.describe_instances(:instance_id => instance_id)
+      raise "Waiting." unless response.instancesSet.item[0].instanceState.name == "pending"
+      puts "Instance #{instance_id} is 'pending'"
+    rescue
+      puts "."
+      sleep(10)
+      tries += 1
+      retry unless tries == 35
+      raise "Instance #{instance_id} never moved to state 'pending'!"
+    end
+    
+    #loop checking for confirmation that instance is running
+    puts "Checking every 10 seconds to detect startup state of 'running' for up to 5 minutes"
     tries = 0
     begin
       instance = amazon.describe_instances(:instance_id => instance_id)
       raise "Server Not Running" unless instance.reservationSet.item[0].instancesSet.item[0].instanceState.name == "running"
-      sleep 5
+      puts "Instance #{instance_id} is 'running'"
       return instance
     rescue
       puts "."
-      sleep 10
+      sleep(10)
       tries += 1
       retry unless tries == 35
-      raise "Server Not Running"
+      raise "Instance #{instance_id} never moved to state 'running'!"
     end
+    
   end
   
   
@@ -301,7 +350,7 @@ module CapsizePlugin
     raise Exception if symbol.nil? || symbol.class != Symbol # TODO : Jesse: fixup exceptions in capsize
     
     # TODO : Jesse : Jesse, you talked about adding a simple caching layer so 
-    # that calls to get() don't have to be avoided since they hit the filesytem
+    # that calls to get() don't have to be avoided since they hit the filesystem
     # multiple times per call...  Thoughts?
     
     # populate the OpenStructs with contents of config files so we can query them.
@@ -330,8 +379,17 @@ module CapsizePlugin
       set symbol, ENV[symbol.to_s.upcase]
     end
     
+    # TODO : Determine whether to keep this.  While it seems nice it also interferes
+    # with the easy ability to try to get() some variable anywhere in the app and know that
+    # if it does not exist we'll get a nil back.  Having this prompt every time can be
+    # very annoying and bad in non-interactive situations.  Maybe its better to just
+    # raise an exception if the user is not providing all that we need either in config
+    # files or on the command line.
+    #
     # finally if symbol name is still nil then prompt the user for it and set it.
-    set symbol, fetch(symbol) {Capistrano::CLI.ui.ask("Please enter a value for #{symbol.to_s}: ")}
+    #unless fetch(symbol)
+    #  set symbol, Capistrano::CLI.ui.ask("Please enter a value for #{symbol.to_s}: ")
+    #end
     
     # If we have a good set variable then return that variable, else send back a nil
     # if that's what we get and let the calling method either raise an exception 
@@ -370,10 +428,38 @@ module CapsizePlugin
   # maintain a sort of database without any of the dependencies of a DB?  Not really fleshed out.  Just
   # putting this here as a reminder as something to think about??
   
-  # TODO : A question for Jesse.  Can you elaborate on why its better for this to be here instead of in tasks.rb?
-  # I see it does clean up tasks, but were not really making anythiing more DRY since we either have the code here
-  # or there.  And we lose the consistency of this type of code all being in tasks.rb.
-  # Doesn't really matter too much I guess, just wanted to learn from your thinking...
+  
+  # accept a Response object and provide screen output of the key data from
+  # this response that needs to be permanently added to the users deploy.rb
+  # and/or Capsize config files.
+  def print_config_instructions(response = nil)
+    
+    raise Exception, "run_instances Response object expected" if response.nil?
+    
+    dns_name = response.reservationSet.item[0].instancesSet.item[0].dnsName
+    
+    puts "\n\nConfiguration Instructions:\n"
+    
+    config_help <<-HELP
+    In order to control this new server instance from Capsize and Capistrano in the 
+    future you will need to store some critical instance information in your 
+    deploy.rb configuration file.  Please add something like the following to 
+    the appropriate places in your config/deploy.rb file.  Of course you may need to 
+    modify this information to suite your circumstances, this is only an example.
+    \n\n
+    config/deploy.rb
+    --
+    HELP
+    
+    puts config_help
+    
+    puts "role :app, #{dns_name}"
+    puts "role :web, #{dns_name}"
+    puts "role :db, #{dns_name}, :primary => true"
+    
+  end
+  
+  # Keeping DRY.  This is called from run instances and describe instances.
   def print_instance_description(result = nil)
     puts "" if result.nil?
     unless result.reservationSet.nil?
