@@ -7,7 +7,8 @@
 # contain non-security related config info and thusly can be 
 # safely versioned in your version control system.
 
-# I should be put in the RAILS_ROOT/config/capsize.yml of your Ruby on Rails app
+# I should be put in the RAILS_ROOT/config/capsize/secure.yml of your Ruby on Rails app
+# or the location of your choice if you override :capsize_config_dir
 
 # set variables in 'common' that are the same across 
 # ALL environments.  This helps us keep this file nice and DRY.
@@ -17,9 +18,6 @@ common: &common
   ##########################################################
   #defaults to the name of the :application set in deploy.rb
   #key_name: 'my_cool_key_name'
-  
-  #defaults to 'config'.  Must not have trailing slash
-  #key_dir: 'config'
   
   
   # CAPSIZE CONFIG

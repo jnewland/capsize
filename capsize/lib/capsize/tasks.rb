@@ -87,8 +87,8 @@ Capistrano::Configuration.instance.load do
       This command will generate a new keypair for you on EC2 and will also
       save a local copy of your private key in the filepath specified by
       KEY_DIR and KEY_NAME.  By default the keypair will be named the
-      same as your Capistrano application name, and the private key will
-      be stored at 'config/<appname>.key'.  If a keypair already exists
+      same as your Capistrano application's name, and the private key will
+      be stored in your capsize config dir.  If a keypair already exists
       on the EC2 servers or locally with the same name it will not be
       overwritten.
       
@@ -115,8 +115,8 @@ Capistrano::Configuration.instance.load do
       This command will delete a keypair from EC2 and will also
       delete the local copy of your private key in the filepath specified by
       KEY_DIR and KEY_NAME.  By default the keypair deleted will be named the
-      same as your Capistrano application name, and the private key will
-      be deleted from 'config/<appname>.key'.  You will be prompted to confirm
+      same as your Capistrano application's name, and the private key will
+      be deleted from your capsize config dir.  You will be prompted to confirm
       deletion of your keypair before the action will proceed.
       
       WARNING : Don't delete keypairs which may be associated with

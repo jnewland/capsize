@@ -14,6 +14,18 @@ Capistrano::Configuration.instance.load do
   # Set reasonable defaults for all needed values so in theory this Cap plugin
   # will work out-of-the-box with no external config required.
   
+  # capsize_config_dir is relative to the location they are running cap from (e.g. RAILS_ROOT)
+  set :capsize_config_dir, 'config/capsize'
+  set :capsize_secure_config_dir, 'config/capsize'
+  
+  set :capsize_config_file_name, 'capsize.yml'
+  set :capsize_secure_config_file_name, 'secure.yml'
+  
+  # Where are the various extra capsize files stored?  Make them easy to get() or override
+  set :capsize_examples_dir, "#{File.join(File.dirname(__FILE__), '/../../examples')}"
+  set :capsize_bin_dir, "#{File.join(File.dirname(__FILE__), '/../../bin')}"
+  
+  
   #set :aws_startup_delay, 60
   
   # Determine where we will deploy to.  if TARGET is not specified 
@@ -33,8 +45,8 @@ Capistrano::Configuration.instance.load do
   set :min_count, 1
   set :max_count, 1
   set :key_name, nil
-  set :key_dir, 'config'
   set :user_data, nil
   set :addressing_type, 'public'
+  
   
 end

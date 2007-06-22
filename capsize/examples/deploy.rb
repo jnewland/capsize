@@ -1,20 +1,14 @@
+# CAPSIZE 'deploy.rb' SAMPLE
+# Use this as a starting point for what you will need to add to your
+# standard Capistrano deploy.rb file to make it function with Capsize.
 
-# TODO : REDO THIS EXAMPLE!
-
+# You will need to make sure that the Capsize 'cap' tasks are being included.
 require 'capsize'
 
-set :user, "desired_user"
-set :username, user
+# Use this to overwrite the standard capsize config dir locations
+#set :capsize_config_dir, 'config/capsize'
+#set :capsize_secure_config_dir, 'config/capsize'
 
-# Name of the keypair used to spawn and connect to the Amazon EC2 Instance
-# Defaults to one created by the setup_keypair task 
-set :aws_keypair_name, "#{application}-capsize"
-
-# Path to the private key for the Amazon EC2 Instance mentioned above
-# Detaults to one created by setup_keypair task
-set :aws_private_key_path, "#{Dir.pwd}/#{aws_keypair_name}-key"
-
-#defaults to an ubuntu image
-#set :aws_ami_id, "ami-f1b05598" # base centOS image
-
-#set :aws_security_group, "default"
+# Use these to overwrite the actual config file names stored in the config dirs.
+#set :capsize_config_file_name, 'capsize.yml'
+#set :capsize_secure_config_file_name, 'secure.yml'

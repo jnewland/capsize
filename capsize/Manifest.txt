@@ -4,6 +4,8 @@ History.txt
 Manifest.txt
 setup.rb
 examples/deploy.rb
+examples/capsize.yml.template
+examples/secure.yml.template
 lib/capsize/capsize_plugin.rb
 lib/capsize/configuration.rb
 lib/capsize/meta_tasks.rb

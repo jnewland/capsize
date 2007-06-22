@@ -3,17 +3,18 @@
 # Secure Config Info for the Amazon EC2 (amazon-ec2) 
 # and Capsize (capsize) gems
 
-# WARNING : DO NOT VERSION IN SVN/SVK
-# You wouldn't want others to be able to browse SVN history
+# WARNING : DO NOT VERSION IN SOURCE CONTROL AS IT CONTAINS PASSWORDS AND KEYS
+# You wouldn't want others to be able to browse your source history
 # and see you secret identity would you?  Tip : Commit the
 # template version of this file in the config dir with empty 
-# AWS identity info.  That way its easy to recreate if you 
+# AWS identity info.  That way its easy to recreate the structure of the file if you 
 # lose your real config file somehow.
 
 # This file should be setup to be deployed by Capistrano
 # along with the rest of your application.
 
-# I should be put in the RAILS_ROOT/config/secure.yml of your Ruby on Rails app
+# I should be put in the RAILS_ROOT/config/capsize/secure.yml of your Ruby on Rails app
+# or the location of your choice if you override :capsize_secure_config_dir
 
 common: &common
   aws_access_key_id: '__YOUR_ACCESS_KEY_ID__'

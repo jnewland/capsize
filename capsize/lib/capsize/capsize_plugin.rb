@@ -26,14 +26,23 @@ module CapsizePlugin
     return dns_name = response.reservationSet.item[0].instancesSet.item[0].dnsName
   end
   
+  
   # build the key file path from key_dir and key_file
   def get_key_file(options = {})
     options = {:key_dir => nil, :key_name => nil}.merge(options)
-    key_dir = options[:key_dir] || get(:key_dir) || "config"
+    key_dir = options[:key_dir] || get(:key_dir) || get(:capsize_secure_config_dir)
     key_name = options[:key_name] || get(:key_name) || "#{application}"
     return key_file = [key_dir, key_name].join('/') + '.key'
   end
   
+  
+  # copy a file from source_file to dest_file
+  def copy_file(options = {})
+    options = {:source_file => nil, :dest_file => nil, :force => false}.merge(options)
+    puts "#{get(:capsize_examples_dir)}"
+    system "ls -la #{get(:capsize_examples_dir)}/capsize.yml.template"
+    
+  end 
   
   # CONSOLE METHODS
   #########################################
@@ -63,12 +72,12 @@ module CapsizePlugin
   def create_keypair(options = {})
     amazon = connect()
     
-    # default keyname is the same as our appname, unless specifically overriden in capsize.yml
-    # default key dir is 'config' unless overridden
+    # default key_name is the same as our appname, unless specifically overriden in capsize.yml
+    # default key_dir is set in the :capsize_config_dir variable
     options = {:key_name => nil, :key_dir => nil}.merge(options)
     
     options[:key_name] = options[:key_name] || get(:key_name) || "#{application}"
-    options[:key_dir] = options[:key_dir] || get(:key_dir) || "config"
+    options[:key_dir] = options[:key_dir] || get(:key_dir) || get(:capsize_secure_config_dir)
     
     #verify key_name and key_dir are set
     raise Exception, "Keypair name required" if options[:key_name].nil? || options[:key_name].empty?
@@ -117,7 +126,7 @@ module CapsizePlugin
     options = {:key_name => nil, :key_dir => nil}.merge(options)
     
     options[:key_name] = options[:key_name] || get(:key_name) || "#{application}"
-    options[:key_dir] = options[:key_dir] || get(:key_dir) || "config"
+    options[:key_dir] = options[:key_dir] || get(:key_dir) || get(:capsize_secure_config_dir)
     
     raise Exception, "Keypair name required" if options[:key_name].nil? || options[:key_name].empty?
     raise Exception, "Keypair directory required" if options[:key_dir].nil? || options[:key_dir].empty?
@@ -185,8 +194,8 @@ module CapsizePlugin
     # override application key_name if the user provided one in config or on the command line
     options[:key_name] = options[:key_name] || get(:key_name) || "#{application}"
     
-    # key_dir defaults to config in capsize/configuration.rb
-    options[:key_dir] = options[:key_dir] || get(:key_dir) || "config"
+    # key_dir defaults to same as :capsize_config_dir variable
+    options[:key_dir] = options[:key_dir] || get(:key_dir) || get(:capsize_config_dir)
     
     # determine the local key file name and delete it
     key_file = get_key_file(:key_name => options[:key_name], :key_dir => options[:key_dir])
@@ -360,8 +369,8 @@ module CapsizePlugin
   
   # capsize.get(:symbol_name) checks for variables in several places, with this precedence (from low to high):
   # * default capistrano or capsize set variables (available with fetch())
-  # * Set in config/secure_config.yml (overwrites previous)
-  # * Set in config/capsize_config.yml (overwrites previous)
+  # * Set in :capsize_config_dir/:capsize_config_file_name (overwrites previous)
+  # * Set in :capsize_config_dir/:capsize_secure_config_file_name (overwrites previous)
   # * Passed in as part of the command line params and available as ENV["SYMBOL_NAME"] (overwrites previous)
   # * If all of the above are nil, get response at a command line prompt for this variable
   #
@@ -374,8 +383,8 @@ module CapsizePlugin
     # multiple times per call...  Thoughts?
     
     # populate the OpenStructs with contents of config files so we can query them.
-    @secure_config = load_config(:config_file => "config/secure.yml")
-    @capsize_config = load_config(:config_file => "config/capsize.yml")
+    @capsize_config = load_config(:config_file => "#{fetch(:capsize_config_dir)}/#{fetch(:capsize_config_file_name)}")
+    @secure_config = load_config(:config_file => "#{fetch(:capsize_secure_config_dir)}/#{fetch(:capsize_secure_config_file_name)}")
     
     # fetch var from default capsize or default capistrano config vars, 
     # and if it doesn't exist set it to nil
