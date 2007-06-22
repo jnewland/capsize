@@ -14,12 +14,6 @@ Capistrano::Configuration.instance.load do
   namespace :ec2 do
     
     
-    # SSH TASKS
-    #########################################
-    
-    # TODO : Add a task that will let you SSH to a specific instance ID using public key auth.
-    # example connect :  ssh -i config/elasticworkbench.key root@ec2-72-44-51-229.z-1.compute-1.amazonaws.com
-    
     # CONSOLE TASKS
     #########################################
     
@@ -75,10 +69,7 @@ Capistrano::Configuration.instance.load do
             puts "[#{item.keyName}] : keyName = " + item.keyName
             puts "[#{item.keyName}] : keyFingerprint = " + item.keyFingerprint
             
-            # tell them if they have the matching private key stored locally and available
-            key_name = item.keyName
-            key_dir = capsize.get(:key_dir) unless capsize.get(:key_dir).nil? || capsize.get(:key_dir).empty?
-            key_file = [key_dir, key_name].join('/') + '.key'
+            key_file = capsize.get_key_file(:key_name => item.keyName)
             
             puts "[#{item.keyName}] : OK : matching local private key found @ #{key_file}" if File.exists?(key_file)
             puts "[#{item.keyName}] : WARNING : matching local private key NOT found @ #{key_file}" unless File.exists?(key_file)
@@ -135,11 +126,12 @@ Capistrano::Configuration.instance.load do
       DESC
       task :delete do
         
-        unless capsize.get(:key_name).nil? || capsize.get(:key_name).empty?
-          key_name = capsize.get(:key_name)
-        else
-          key_name = "#{application}"
-        end
+        #unless capsize.get(:key_name).nil? || capsize.get(:key_name).empty?
+        #  key_name = capsize.get(:key_name)
+        #else
+        #  key_name = "#{application}"
+        #end
+        key_name = capsize.get(:key_name) || "#{application}"
         
         confirm = (Capistrano::CLI.ui.ask("WARNING! Are you sure you want to delete the local and remote parts of the keypair with the name \"#{key_name}\"?\nYou will no longer be able to access any running instances that depend on this keypair!? (y/N): ").downcase == 'y')
         
@@ -162,6 +154,53 @@ Capistrano::Configuration.instance.load do
     namespace :instances do
       
       
+      desc <<-DESC
+      Open an SSH shell to instance_id.
+      This command makes it easy to open an interactive SSH session with one
+      of your running instances.  Just set instance_id in one of your config
+      files, or pass in INSTANCE_ID='i-123456' to this task and an SSH 
+      connection to the public DNS name for that instance will be started.
+      SSH is configured to use try the public key pair associated with
+      your application for authentication assuming you started your instance
+      to be associated with that key_name.  The option StrictHostKeyChecking=no
+      is passed to your local SSH command to avoid prompting the user regarding 
+      adding the remote host signature to their SSH known_hosts file as these
+      server signatures will typically change often anyway in the EC2 environment.
+      Task assumes you have a local 'ssh' command on your shell path, and that you
+      are using OpenSSH.  Your mileage may vary with other SSH implementations.
+      DESC
+      task :ssh do
+        
+        capsize.get(:instance_id)
+        
+        case instance_id
+        when nil, ""
+          puts "You don't seem to have set an instance_id in your config or passed an INSTANCE_ID environment variable..."
+        else
+          
+          begin
+            dns_name = capsize.get_dns_name_from_instance_id(:instance_id => capsize.get(:instance_id))
+          rescue Exception => e
+            puts "The attempt to get the DNS name for your instance failed with the error : " + e
+          end
+          
+          key_file = capsize.get_key_file
+          
+          # StrictHostKeyChecking=no ensures that you won't be prompted each time for adding
+          # the remote host to your ssh known_hosts file.  This should be ok as the host IP
+          # and fingerprint will constantly change as you start and stop EC2 instances.
+          # For the ultra paranoid who are concerned about man-in-the-middle attacks you
+          # may want to do ssh manually, and perhaps not use no-password public key auth.
+          #
+          # example connect :  ssh -o StrictHostKeyChecking=no -i config/myappkey.key root@ec2-72-44-51-000.z-1.compute-1.amazonaws.com
+          puts "Trying to connect with host with local shell command:"
+          puts "ssh -o StrictHostKeyChecking=no -i #{key_file} root@#{dns_name}"
+          puts "--\n"
+          system "ssh -o StrictHostKeyChecking=no -i #{key_file} root@#{dns_name}"
+        end
+      end
+      
+      
       # TODO : keypairs:create automatically saves the key pair with the name of the application in the config dir.  We
       # should make it so that it uses that if it exists, and only get() it from the config if that is not found?
       # TODO : ADD FULL CAP -E DOCS HERE
@@ -176,9 +215,10 @@ Capistrano::Configuration.instance.load do
           puts "An instance has been started with the following metadata:"
           capsize.print_instance_description(response)
           
-          # TODO : FIX this SSH string so it matches their key info and the host that was started
-          #puts "You should be able to connect via SSH without specifying a password with a command like:"
-          #puts "  ssh -i config/elasticworkbench.key root@ec2-72-44-51-229.z-1.compute-1.amazonaws.com"
+          instance_id = response.reservationSet.item[0].instancesSet.item[0].instanceId
+          puts "You should be able to connect within a minute or two to this new instance via SSH (using public key authentication) with:\n"
+          puts "cap ec2:instances:ssh INSTANCE_ID='#{instance_id}'"
+          puts ""
           
           # TODO : Tell the user exactly what they need to put in their deploy.rb
           # to make the control of their server instances persistent!

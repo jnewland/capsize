@@ -12,6 +12,29 @@
 module CapsizePlugin
   
   
+  # HELPER METHODS
+  #########################################
+  
+  
+  def get_dns_name_from_instance_id(options = {})
+    amazon = connect()
+    options = {:instance_id => ""}.merge(options)
+    
+    raise Exception, "Instance ID required" if options[:instance_id].nil? || options[:instance_id].empty?
+    
+    response = amazon.describe_instances(:instance_id => options[:instance_id])
+    return dns_name = response.reservationSet.item[0].instancesSet.item[0].dnsName
+  end
+  
+  # build the key file path from key_dir and key_file
+  def get_key_file(options = {})
+    options = {:key_dir => nil, :key_name => nil}.merge(options)
+    key_dir = options[:key_dir] || get(:key_dir) || "config"
+    key_name = options[:key_name] || get(:key_name) || "#{application}"
+    return key_file = [key_dir, key_name].join('/') + '.key'
+  end
+  
+  
   # CONSOLE METHODS
   #########################################
   
@@ -35,23 +58,24 @@ module CapsizePlugin
   end
   
   
+  # TODO : Is there a way to extract the 'puts' calls from here and make this have less 'view' code?
   #sets up a keypair named options[:key_name] and writes out the private key to options[:key_dir]
   def create_keypair(options = {})
     amazon = connect()
     
     # default keyname is the same as our appname, unless specifically overriden in capsize.yml
     # default key dir is 'config' unless overridden
-    options = {:key_name => "#{application}", :key_dir => nil}.merge(options)
+    options = {:key_name => nil, :key_dir => nil}.merge(options)
     
-    options[:key_name] = get(:key_name) unless get(:key_name).nil? || get(:key_name).empty?
-    options[:key_dir] = get(:key_dir) unless get(:key_dir).nil? || get(:key_dir).empty?
+    options[:key_name] = options[:key_name] || get(:key_name) || "#{application}"
+    options[:key_dir] = options[:key_dir] || get(:key_dir) || "config"
     
     #verify key_name and key_dir are set
     raise Exception, "Keypair name required" if options[:key_name].nil? || options[:key_name].empty?
     raise Exception, "Keypair directory required" if options[:key_dir].nil? || options[:key_dir].empty?
     
-    # create the string that represents the full 'key_dir/key_name.key'
-    key_file = [options[:key_dir], options[:key_name]].join('/') + '.key'
+    # determine the local key file name and delete it
+    key_file = get_key_file(:key_name => options[:key_name], :key_dir => options[:key_dir])
     
     # Verify keypair doesn't already exist on EC2 servers...
     unless amazon.describe_keypairs(:key_name => options[:key_name]).keySet.nil?
@@ -76,43 +100,35 @@ module CapsizePlugin
     # write private key to file
     File.open(key_file, 'w') do |file|
       file.write(private_key.keyMaterial)
-      #file.write("\n\nfingerprint:\n" + private_key.keyFingerprint)
-      #file.write("\n\nname:\n" + private_key.keyName)
     end
     puts "The generated private key has been saved in #{key_file}"
     
-    # store the key_file path so other tasks in capistrano running in sequence with this
-    # task will be able to utilize it.
-    set :key_file, key_file
-    
-    # Cross platform CHMOD
+    # Cross platform CHMOD, make the file owner +rw, group and other -all
     File.chmod 0600, key_file
     
   end
   
   
+  # TODO : Is there a way to extract the 'puts' calls from here and make this have less 'view' code?
   # Deletes a keypair from EC2 and from the local filesystem
   def delete_keypair(options = {})
     amazon = connect()
     
-    # default key_name is the same as our appname, unless specifically overriden
-    # default key_dir is 'config' unless specifically overriden
-    options = {:key_name => "#{application}", :key_dir => nil}.merge(options)
+    options = {:key_name => nil, :key_dir => nil}.merge(options)
     
-    options[:key_name] = get(:key_name) unless get(:key_name).nil? || get(:key_name).empty?
-    options[:key_dir] = get(:key_dir) unless get(:key_dir).nil? || get(:key_dir).empty?
+    options[:key_name] = options[:key_name] || get(:key_name) || "#{application}"
+    options[:key_dir] = options[:key_dir] || get(:key_dir) || "config"
     
-    # verify key_name and key_dir are set
     raise Exception, "Keypair name required" if options[:key_name].nil? || options[:key_name].empty?
     raise Exception, "Keypair directory required" if options[:key_dir].nil? || options[:key_dir].empty?
     raise Exception, "Keypair \"#{options[:key_name]}\" does not exist on EC2." if amazon.describe_keypairs(:key_name => options[:key_name]).keySet.nil?
     
-    # create the string that represents the full dir/name.key
-    key_file = [options[:key_dir],options[:key_name]].join('/') + '.key'
-    
+    # delete the keypair from the amazon EC2 servers
     amazon.delete_keypair(:key_name => options[:key_name])
     puts "Keypair \"#{options[:key_name]}\" deleted from EC2!"
     
+    # determine the local key file name and delete it
+    key_file = get_key_file(:key_name => options[:key_name])
     File.delete(key_file)
     puts "Keypair \"#{key_file}\" deleted from local file system!"
     
@@ -145,13 +161,16 @@ module CapsizePlugin
   
   # Run EC2 instance(s)
   # TODO : Deal with starting multiple instances!  Now only single instances are properly handled.
+  # TODO : Is there a way to extract the 'puts' calls from here and make this have less 'view' code?
+  
   def run_instance(options = {})
     amazon = connect()
     
     options = { :image_id => get(:image_id),
                 :min_count => get(:min_count),
                 :max_count => get(:max_count),
-                :key_name => "#{application}",
+                :key_name => nil,
+                :key_dir => nil,
                 :group_name => get(:group_name),
                 :user_data => get(:user_data),
                 :addressing_type => get(:addressing_type)
@@ -164,13 +183,13 @@ module CapsizePlugin
     # private key stored in the config dir.
     
     # override application key_name if the user provided one in config or on the command line
-    options[:key_name] = get(:key_name) unless get(:key_name).nil? || get(:key_name).empty?
+    options[:key_name] = options[:key_name] || get(:key_name) || "#{application}"
     
     # key_dir defaults to config in capsize/configuration.rb
-    options[:key_dir] = get(:key_dir) unless get(:key_dir).nil? || get(:key_dir).empty?
+    options[:key_dir] = options[:key_dir] || get(:key_dir) || "config"
     
-    # create the string that represents the joined key_dir/key_name.key filename
-    key_file = [options[:key_dir], options[:key_name]].join('/') + '.key'
+    # determine the local key file name and delete it
+    key_file = get_key_file(:key_name => options[:key_name], :key_dir => options[:key_dir])
     
     # don't let them go further if there is no private key present.
     raise Exception, "Private key is not present in #{key_file}.\nPlease generate one with 'cap ec2:keypairs:create' or specify a different KEY_NAME." unless File.exists?(key_file)
@@ -330,6 +349,7 @@ module CapsizePlugin
     raise Exception, "You must have an :aws_access_key_id defined in your config." if fetch(:aws_access_key_id).nil? || fetch(:aws_access_key_id).empty?
     raise Exception, "You must have an :aws_secret_access_key defined in your config." if fetch(:aws_secret_access_key).nil? || fetch(:aws_secret_access_key).empty?
     
+    # TODO : Do we need this begin/rescue here?  Or just let each calling method/task rescue?  This would also get the 'puts' out of this file.
     begin
       return amazon = EC2::Base.new(:access_key_id => get(:aws_access_key_id), :secret_access_key => get(:aws_secret_access_key), :use_ssl => use_ssl)
     rescue Exception => e
@@ -428,6 +448,8 @@ module CapsizePlugin
   # maintain a sort of database without any of the dependencies of a DB?  Not really fleshed out.  Just
   # putting this here as a reminder as something to think about??
   
+  
+  # TODO : Should these methods with puts in them be in here or in the tasks.rb?
   
   # accept a Response object and provide screen output of the key data from
   # this response that needs to be permanently added to the users deploy.rb
