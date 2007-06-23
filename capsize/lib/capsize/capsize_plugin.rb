@@ -502,6 +502,7 @@ module CapsizePlugin
   
   # TODO : Should these methods with puts in them be in here or in the tasks.rb?
   
+  # TODO : Finish this...
   # accept a Response object and provide screen output of the key data from
   # this response that needs to be permanently added to the users deploy.rb
   # and/or Capsize config files.
