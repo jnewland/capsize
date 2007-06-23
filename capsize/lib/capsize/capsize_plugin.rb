@@ -173,7 +173,6 @@ module CapsizePlugin
   # Run EC2 instance(s)
   # TODO : Deal with starting multiple instances!  Now only single instances are properly handled.
   # TODO : Is there a way to extract the 'puts' calls from here and make this have less 'view' code?
-  # TODO : Make sure that the run instance uses both the app specific keypair, and the app specific security group when starting, if they exist
   def run_instance(options = {})
     amazon = connect()
     
@@ -408,7 +407,6 @@ module CapsizePlugin
     raise Exception, "You must have an :aws_access_key_id defined in your config." if fetch(:aws_access_key_id).nil? || fetch(:aws_access_key_id).empty?
     raise Exception, "You must have an :aws_secret_access_key defined in your config." if fetch(:aws_secret_access_key).nil? || fetch(:aws_secret_access_key).empty?
     
-    # TODO : Do we need this begin/rescue here?  Or just let each calling method/task rescue?  This would also get the 'puts' out of this file.
     begin
       return amazon = EC2::Base.new(:access_key_id => get(:aws_access_key_id), :secret_access_key => get(:aws_secret_access_key), :use_ssl => use_ssl)
     rescue Exception => e
@@ -458,22 +456,10 @@ module CapsizePlugin
       set symbol, ENV[symbol.to_s.upcase]
     end
     
-    # TODO : Determine whether to keep this.  While it seems nice it also interferes
-    # with the easy ability to try to get() some variable anywhere in the app and know that
-    # if it does not exist we'll get a nil back.  Having this prompt every time can be
-    # very annoying and bad in non-interactive situations.  Maybe its better to just
-    # raise an exception if the user is not providing all that we need either in config
-    # files or on the command line.
-    #
-    # finally if symbol name is still nil then prompt the user for it and set it.
-    #unless fetch(symbol)
-    #  set symbol, Capistrano::CLI.ui.ask("Please enter a value for #{symbol.to_s}: ")
-    #end
-    
     # If we have a good set variable then return that variable, else send back a nil
     # if that's what we get and let the calling method either raise an exception 
     # or determine how to gracefully handle it.  We don't want to raise an exception every 
-    # time a get fails.  nil might be a good answer for some questions? no?
+    # time a get fails.  nil might be just fine as an answer for some questions.
     return fetch(symbol)
     
   end

@@ -212,7 +212,7 @@ Capistrano::Configuration.instance.load do
           puts "cap ec2:instances:ssh INSTANCE_ID='#{instance_id}'"
           puts ""
           
-          # TODO : Tell the user exactly what they need to put in their deploy.rb
+          # TODO : Tell the user exactly what instance info they need to put in their deploy.rb
           # to make the control of their server instances persistent!
           #capsize.print_config_instructions(:response => response)
           
@@ -346,7 +346,6 @@ Capistrano::Configuration.instance.load do
       end
       
       
-      # TODO : add the rest of the security group description response items
       desc <<-DESC
       Describes security groups.
       This will return a description of your security groups on EC2.
