@@ -10,6 +10,6 @@
 #++
 
 # require necessary libraries
-%w[ rubygems capistrano EC2 ostruct yaml ].each { |f| require f }
+%w[ rubygems capistrano EC2 ostruct yaml fileutils ].each { |f| require f }
 
 Dir[File.join(File.dirname(__FILE__), 'capsize/**/*.rb')].sort.each { |lib| require lib }

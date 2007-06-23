@@ -36,14 +36,6 @@ module CapsizePlugin
   end
   
   
-  # copy a file from source_file to dest_file
-  def copy_file(options = {})
-    options = {:source_file => nil, :dest_file => nil, :force => false}.merge(options)
-    puts "#{get(:capsize_examples_dir)}"
-    system "ls -la #{get(:capsize_examples_dir)}/capsize.yml.template"
-    
-  end 
-  
   # CONSOLE METHODS
   #########################################
   
@@ -149,10 +141,20 @@ module CapsizePlugin
   
   
   #describe the amazon machine images available for launch
+  # Even though the amazon-ec2 library allows us to pass in an array of image_id's,
+  # owner_id's, or executable_by's we restrict Capsize usage to passing in a String
+  # with a single value.
   def describe_images(options = {})
     amazon = connect()
-    options = {:image_id => [], :owner_id => [], :executable_by => []}.merge(options)
+    
+    options = {:image_id => nil, :owner_id => nil, :executable_by => nil}.merge(options)
+    
+    options[:image_id] = options[:image_id] || get(:image_id) || ""
+    options[:owner_id] = options[:owner_id] || get(:owner_id) || ""
+    options[:executable_by] = options[:executable_by] || get(:executable_by) || ""
+    
     amazon.describe_images(:image_id => options[:image_id], :owner_id => options[:owner_id], :executable_by => options[:executable_by])
+    
   end
   
   
@@ -171,7 +173,7 @@ module CapsizePlugin
   # Run EC2 instance(s)
   # TODO : Deal with starting multiple instances!  Now only single instances are properly handled.
   # TODO : Is there a way to extract the 'puts' calls from here and make this have less 'view' code?
-  
+  # TODO : Make sure that the run instance uses both the app specific keypair, and the app specific security group when starting, if they exist
   def run_instance(options = {})
     amazon = connect()
     
@@ -179,7 +181,6 @@ module CapsizePlugin
                 :min_count => get(:min_count),
                 :max_count => get(:max_count),
                 :key_name => nil,
-                :key_dir => nil,
                 :group_name => get(:group_name),
                 :user_data => get(:user_data),
                 :addressing_type => get(:addressing_type)
@@ -195,7 +196,7 @@ module CapsizePlugin
     options[:key_name] = options[:key_name] || get(:key_name) || "#{application}"
     
     # key_dir defaults to same as :capsize_config_dir variable
-    options[:key_dir] = options[:key_dir] || get(:key_dir) || get(:capsize_config_dir)
+    options[:key_dir] = options[:key_dir] || get(:key_dir) || get(:capsize_secure_config_dir)
     
     # determine the local key file name and delete it
     key_file = get_key_file(:key_name => options[:key_name], :key_dir => options[:key_dir])
@@ -268,6 +269,39 @@ module CapsizePlugin
   
   # SECURITY GROUP METHODS
   #########################################
+  
+  
+  def create_security_group(options = {})
+    amazon = connect()
+    
+    # default group_name is the same as our appname, unless specifically overriden in capsize.yml
+    # default group_description is set in the :group_description variable
+    options = {:group_name => nil, :group_description => nil}.merge(options)
+    
+    options[:group_name] = options[:group_name] || get(:group_name) || "#{application}"
+    options[:group_description] = options[:group_description] || get(:group_description) || "#{application}"
+    
+    raise Exception, "Group name required" if options[:group_name].nil? || options[:group_name].empty?
+    raise Exception, "Group description required" if options[:group_description].nil? || options[:group_description].empty?
+    
+    amazon.create_security_group(:group_name => options[:group_name], :group_description => options[:group_description])
+    
+  end
+  
+  
+  def delete_security_group(options = {})
+    amazon = connect()
+    
+    # default group_name is the same as our appname, unless specifically overriden in capsize.yml
+    options = {:group_name => nil}.merge(options)
+    
+    options[:group_name] = options[:group_name] || get(:group_name) || "#{application}"
+    
+    raise Exception, "Group name required" if options[:group_name].nil? || options[:group_name].empty?
+    
+    amazon.delete_security_group(:group_name => options[:group_name])
+    
+  end
   
   
   # Define firewall access rules for a specific security group.  Instances will inherit
@@ -436,8 +470,14 @@ module CapsizePlugin
     raise Exception, "Config file location required" if options[:config_file].nil? || options[:config_file].empty?
     
     if File.exist?(options[:config_file])
-      config = OpenStruct.new(YAML.load_file(options[:config_file]))
-      env_config =  OpenStruct.new(config.send(deploy_env))
+      
+      # try to load the yaml config file
+      begin
+        config = OpenStruct.new(YAML.load_file(options[:config_file]))
+        env_config =  OpenStruct.new(config.send(deploy_env))
+      rescue Exception => e
+        env_config = nil
+      end
       
       # Send back an empty OpenStruct if we can't load the config file.
       # config files are not required!  Want to avoid method calls on nil

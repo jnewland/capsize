@@ -12,7 +12,8 @@
 Capistrano::Configuration.instance.load do
   
   # Set reasonable defaults for all needed values so in theory this Cap plugin
-  # will work out-of-the-box with no external config required.
+  # will work out-of-the-box with no external config required.  Users
+  # can also opt to set any of these in their deploy.rb file to override them.
   
   # capsize_config_dir is relative to the location they are running cap from (e.g. RAILS_ROOT)
   set :capsize_config_dir, 'config/capsize'
@@ -25,15 +26,15 @@ Capistrano::Configuration.instance.load do
   set :capsize_examples_dir, "#{File.join(File.dirname(__FILE__), '/../../examples')}"
   set :capsize_bin_dir, "#{File.join(File.dirname(__FILE__), '/../../bin')}"
   
-  
-  #set :aws_startup_delay, 60
-  
   # Determine where we will deploy to.  if TARGET is not specified 
-  # then setup for production by default
-  # TODO : CHANGE THIS TO TARGET_ENV IN HERE AND AMAZON-EC2
+  # then setup for 'production' environment by default.
+  # TODO : CHANGE THIS TO TARGET_ENV IN HERE AND AMAZON-EC2, and in my app
   set :deploy_env, ENV['TARGET'] ||= "production"
   
-  set :group_name, 'default'
+  # defaults for new security groups
+  set :group_name, "#{application}"
+  set :group_description, "Default security group for the \"#{application}\" application."
+  
   set :ip_protocol, 'tcp'
   set :from_port, nil
   set :to_port, nil
@@ -44,9 +45,8 @@ Capistrano::Configuration.instance.load do
   set :image_id, nil
   set :min_count, 1
   set :max_count, 1
-  set :key_name, nil
+  set :key_name, "#{application}"
   set :user_data, nil
   set :addressing_type, 'public'
-  
   
 end

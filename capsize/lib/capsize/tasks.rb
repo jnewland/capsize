@@ -327,6 +327,49 @@ Capistrano::Configuration.instance.load do
     namespace :security_groups do
       
       desc <<-DESC
+      Create a security group.
+      Create a new security group specifying:
+        - :group_name or GROUP_NAME (defaults to application name)
+        - :group_description or GROUP_DESCRIPTION (defaults to generic description including application name)
+      DESC
+      task :create do
+        begin
+          capsize.create_security_group()
+          puts "The security group \"#{capsize.get(:group_name)}\" has been created."
+        rescue EC2::InternalError => e
+          # BUG : Bug in EC2.  Is throwing InternalError instead of InvalidGroupDuplicate if you try to create a group that exists.  Catch both.
+          # REMOVE THIS RESCUE WHEN BUG IS FIXED BY AWS
+          puts "The security group you specified for group name \"#{capsize.get(:group_name)}\" already exists (EC2::InternalError)."
+          # Don't re-raise this exception
+        rescue EC2::InvalidGroupDuplicate => e
+          puts "The security group you specified for group name \"#{capsize.get(:group_name)}\" already exists (EC2::InvalidGroupDuplicate)."
+          # Don't re-raise this exception
+        rescue Exception => e
+          puts "The attempt to create security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
+          raise e
+        end
+        
+      end
+      
+      
+      desc <<-DESC
+      Delete a security group.
+      Delete a security group specifying:
+        - :group_name or GROUP_NAME (defaults to application name)
+      DESC
+      task :delete do
+        begin
+          capsize.delete_security_group()
+          puts "The security group \"#{capsize.get(:group_name)}\" has been deleted."
+        rescue Exception => e
+          puts "The attempt to delete security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
+          raise e
+        end
+        
+      end
+      
+      
+      desc <<-DESC
       Authorize firewall ingress for the specified GROUP_NAME and FROM_PORT.
       This calls authorize_ingress for the group defined in the :group_name variable
       and the port specified in :from_port and :to_port. Any instances that were started and set to
@@ -348,6 +391,55 @@ Capistrano::Configuration.instance.load do
         
       end
       
+      
+      desc <<-DESC
+      Create a new security group and authorize firewall ingress for the specified GROUP_NAME on standard web ports:
+      
+        - 22 (SSH)
+        - 80 (HTTP)
+        - 443 (HTTPS)
+      
+      By default the group name created is the same as your :application name
+      in deploy.rb.  You can override the group name used by setting 
+      :group_name or by passing in the environment variable GROUP_NAME='' 
+      on the cap command line.
+      
+      Any instances that were started and set to use the security group 
+      :group_name will be affected as soon as possible.
+      DESC
+      task :create_with_standard_ports do
+        
+        begin
+          capsize.create_security_group()
+          puts "The security group \"#{capsize.get(:group_name)}\" has been created."
+        rescue EC2::InternalError => e
+          # BUG : Bug in EC2.  Is throwing InternalError instead of InvalidGroupDuplicate if you try to create a group that exists.  Catch both.
+          # REMOVE THIS RESCUE WHEN BUG IS FIXED BY AWS
+          puts "The security group you specified for group name \"#{capsize.get(:group_name)}\" already exists (EC2::InternalError)."
+          # Don't re-raise this exception
+        rescue EC2::InvalidGroupDuplicate => e
+          puts "The security group you specified for group name \"#{capsize.get(:group_name)}\" already exists (EC2::InvalidGroupDuplicate)."
+          # Don't re-raise this exception
+        rescue Exception => e
+          puts "The attempt to create security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
+          raise e
+        end
+        
+        ports = [22, 80, 443]
+        ports.each { |port|
+          begin
+            capsize.authorize_ingress({:group_name => capsize.get(:group_name), :from_port => "#{port}", :to_port => "#{port}"})
+            puts "Firewall ingress granted for :group_name => #{capsize.get(:group_name)} on port #{port}"
+          rescue EC2::InvalidPermissionDuplicate => e
+            puts "The firewall ingress rule you specified for group name \"#{capsize.get(:group_name)}\" on port #{port} was already set (EC2::InvalidPermissionDuplicate)."
+            # Don't re-raise this exception
+          rescue Exception => e
+            puts "The attempt to allow firewall ingress on port #{port} for security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
+            raise e
+          end
+        }
+        
+      end
       
       desc <<-DESC
       Revoke firewall ingress for the specified GROUP_NAME and FROM_PORT.
@@ -376,9 +468,6 @@ Capistrano::Configuration.instance.load do
     
     # IMAGE TASKS
     #########################################
-    
-    # TODO : separate public/private image list methods?, No, prob better to be able to pass in a param to say:
-    # OWNER_ID = "self", or "amazon", or the other options allowed...
     
     namespace :images do
       
@@ -414,10 +503,6 @@ Capistrano::Configuration.instance.load do
     This doesn't use Net::SSH, but rather shells out to SSH to access the host w/ private key auth.
     DESC
     task :setup_user do
-      if capsize_interactive_setup
-        puts "Waiting #{aws_startup_delay} for #{aws_hostname} to boot..."
-        sleep aws_startup_delay.to_i
-      end
       set :user, fetch(:user) {`whoami`.chomp}
       puts "\nConnecting to #{aws_hostname}..."
       puts "\nPlease create a secure root password"

@@ -47,7 +47,7 @@
 	<p><b>Legal Stuff : This project is in no way affiliated nor does it represent Amazon.com, Amazon Web Services, or the Amazon Web Services Elastic Compute Cloud service.</b></p>
 
 
-	<p>This gem provides a plugin for the fantastic <a href="http://www.capify.org/">Capistrano 2</a> deployment and server management tool written by Jamis Buck.  With this gem, and Capistrano installed, you will be able to issue commands and script your interaction with Amazon&#8217;s Elastic Compute Cloud (EC2) service.  This gem depends on the installation of the newly updated &#8216;amazon-ec2&#8217; Ruby Gem which is an interface library that can be used to interact with the Amazon <span class="caps">EC2</span> system using the Query <span class="caps">API</span> (as opposed to <span class="caps">SOAP</span>).</p>
+	<p>This gem provides a plugin for the fantastic <a href="http://www.capify.org/">Capistrano 2</a> deployment and server management tool written by Jamis Buck.  With this gem, and Capistrano installed, you will be able to issue commands and script your interaction with Amazon&#8217;s Elastic Compute Cloud (EC2) service.  This gem depends on the installation of the newly updated <a href="http://amazon-ec2.rubyforge.org/">amazon-ec2</a> Ruby Gem which is an interface library that can be used to interact with the Amazon <span class="caps">EC2</span> system.</p>
 
 
 	<h2>Project Info</h2>
@@ -80,51 +80,134 @@
 	<h3>Installing the gem</h3>
 
 
-	<p>Linux / <span class="caps">OS X</span> : <pre syntax="ruby">sudo gem install capsize</pre></p>
+	<p>Linux / <span class="caps">OS X</span> : <pre syntax="ruby">sudo gem install capsize --include-dependencies</pre></p>
 
 
-	<p>Microsoft Windows : <pre syntax="ruby">gem install capsize</pre></p>
+	<p>Microsoft Windows : <pre syntax="ruby">gem install capsize --include-dependencies</pre></p>
 
 
-	<p>Note : This gem has a number of dependencies for runtime and testing.  It is recommended that you choose &#8216;Y&#8217; to install dependencies when asked by the gem install tool.</p>
+	<p>Note : This gem has a number of dependencies for runtime and testing.  It is recommended that you choose &#8216;Y&#8217; to install dependencies when asked by the gem install tool (unless you passed in the&#8212;include-dependencies command which will take care of that automatically).</p>
 
 
-	<h2>Sample Usage</h2>
+	<h2>Getting Started</h2>
 
 
-	<p><span class="caps">TODO</span> :</p>
+	<p>For the purposes of this guide we&#8217;ll assume you followed the steps in the &#8216;Installing the gem&#8217; section above and know how to create a new Ruby on Rails application.  We&#8217;ll also assume that you have installed Capistrano 2.x properly in that Rails application and have done at least the initial steps for setting up Capistrano (and most importantly have set the Capistrano :application name in deploy.rb).</p>
 
 
-	<h3>Project Related Websites</h3>
+	<p>cd into the <span class="caps">RAILS</span>_ROOT of your project</p>
 
 
-	<p><a href="http://aws.amazon.com/">http://aws.amazon.com/</a>
-<a href="http://amazon-ec2.rubyforge.org/">http://amazon-ec2.rubyforge.org/</a>
-<a href="http://capsize.rubyforge.org/">http://capsize.rubyforge.org/</a></p>
+	<p>Edit the file config/deploy.rb and find something like the following:</p>
+
+
+<pre syntax="ruby">
+set :application, "foobar" 
+</pre>
+
+	<p><span class="caps">IMPORTANT</span> : Ensure that the &#8220;require &#8216;capsize&#8217;&#8221; line comes <span class="caps">AFTER</span> the line in your configuration where you set your application name.  Capsize will not work properly if this is not done!  Now add this:</p>
+
+
+<pre syntax="ruby">
+
+# #################################################################
+# CAPSIZE CONFIG SETTINGS
+# #################################################################
+
+# Include the Capsize EC2 'cap' tasks
+# WARNING : This must be placed in your deploy.rb file anywhere 
+# AFTER the line where you set your application name!  Looks like:
+#   set :application, "foobar".
+# The application name is used by Capsize and the order matters!
+require 'capsize'
+
+# Uncomment to override the standard capsize config dir
+# used for standard config info.
+#set :capsize_config_dir, 'config/capsize'
+
+# Uncomment to override location used to store a 
+# secure config file with your AWS credentials,
+# and EC2 private keypair information.
+#set :capsize_secure_config_dir, 'config/capsize'
+
+# Uncomment to override the actual config file names 
+# that are stored in the config dirs noted above.
+#set :capsize_config_file_name, 'capsize.yml'
+#set :capsize_secure_config_file_name, 'secure.yml'
+
+</pre>
+
+	<p>If you are picky about the location of your configuration files for Capsize feel free to modify the variables shown in the sample above to suit your environment.  The defaults should be fine for most.  It is easiest if you decide now and modify the file before we create your config in the following steps.</p>
+
+
+	<p>Once the Capsize section of deploy.rb is just how you&#8217;d like it you should be able to run &#8216;cap -T&#8217; to show all available Capistrano commands:</p>
+
+
+<pre syntax="ruby">
+# cap -T
+...
+cap ec2:console:output                             # Show instance console output.
+cap ec2:images:describe                            # Describe machine images you...
+cap ec2:instances:describe                         # Info about your instances.
+cap ec2:instances:reboot                           # Reboot an EC2 instance.
+cap ec2:instances:run                              # Runs an instance of :image_...
+cap ec2:instances:ssh                              # Open an SSH shell to instan...
+cap ec2:instances:terminate                        # Terminate an EC2 instance.
+cap ec2:keypairs:create                            # Create and store a new keyp...
+cap ec2:keypairs:delete                            # Delete a keypair.
+cap ec2:keypairs:describe                          # Describes your keypairs.
+cap ec2:security_groups:authorize_ingress          # Authorize firewall ingress ...
+cap ec2:security_groups:create                     # Create a security group.
+cap ec2:security_groups:create_with_standard_ports # in deploy.
+cap ec2:security_groups:delete                     # Delete a security group.
+cap ec2:security_groups:revoke_ingress             # Revoke firewall ingress for...
+cap ec2:setup                                      # Initialize the Capsize conf...
+...
+</pre>
+
+	<p>You should now see a group of tasks that start in the namespace &#8216;ec2:&#8217; similar to what you see above.</p>
+
+
+	<p>Finally, run the following Capsize command which will generate your initial Capsize config files and show you a help document that will take you through the remaining configuration steps and get you up and running with your first Capsize controlled <span class="caps">EC2</span> instance.</p>
+
+
+<pre syntax="ruby">
+cap ec2:setup
+</pre>
+
+	<p>Enjoy!</p>
+
+
+	<h3>Related Project Websites</h3>
+
+
+	<p><a href="http://aws.amazon.com/">http://aws.amazon.com/</a></p>
+
+
+	<p><a href="http://amazon-ec2.rubyforge.org/">http://amazon-ec2.rubyforge.org/</a></p>
+
+
+	<p><a href="http://capsize.rubyforge.org/">http://capsize.rubyforge.org/</a></p>
+
+
+	<p><a href="http://www.capify.org/">Capistrano 2</a></p>
 
 
 	<h3>Project Tools</h3>
 
 
 	<p><a href="http://rubyforge.org/projects/capsize/">Project Home</a>
-<span class="caps">TODO</span> : <span class="caps">FIX THESE LINKS</span>
-<a href="http://rubyforge.org/frs/?group_id=2753">Downloads</a>
-<a href="http://rubyforge.org/scm/?group_id=2753">Browse Code</a>
-<a href="http://rubyforge.org/tracker/?group_id=2753">Report Bugs</a>
-<a href="http://rubyforge.org/tracker/?group_id=2753">Request Features</a>
-<a href="http://rubyforge.org/tracker/?group_id=2753">Submit Patches</a></p>
-
-
-	<h3>Related Projects</h3>
-
-
-	<p><a href="http://www.capify.org/">Capistrano 2</a></p>
+<a href="http://rubyforge.org/frs/?group_id=3853">Downloads</a>
+<a href="http://rubyforge.org/scm/?group_id=3853">Browse Code</a>
+<a href="http://rubyforge.org/tracker/?group_id=3853">Report Bugs</a>
+<a href="http://rubyforge.org/tracker/?group_id=3853">Request Features</a>
+<a href="http://rubyforge.org/tracker/?group_id=3853">Submit Patches</a></p>
 
 
 	<h2>Credits</h2>
 
 
-	<p>The original version of the Capistrano plugin gem was written by Jesse Newland.  This plugin (which shall remain un-named due to the trademark infringement cease and desist letter he received!) was a great start to using what was then a pretty weak amazon-ec2 gem library (I can say that since I wrote the first version based on Amazon Web Services sample code).  Jesse has graciously allowed us to merge his project with the the <span class="caps">EC2</span> gem and we are excited to have his help on the transition and helping to set the future direction of this gem.</p>
+	<p>The original version of this Capistrano plugin gem (Capazon) was written by Jesse Newland .  Jesse got off to a fantastic start, especially considering the pretty limited functionality of the original &#8216;amazon-ec2&#8217; gem library (I can say that since I wrote the first version based on Amazon Web Services sample code).  Jesse has graciously allowed me to run with a lot of changes and deprecate the original gem.  Unfortunately the name change was necessitated by a cease and desist letter from a certain company that shall remain unnamed.  We are excited to have Jesse&#8217;s help on the transition, code contributions, and helping to set the future direction of the Capsize gem.</p>
 
 
 	<h2>Contact</h2>
@@ -132,7 +215,7 @@
 
 	<p>Comments, patches, and bug reports are very welcome. Please send an email to the address below or use the RubyForge forum for this project.</p>
     <p class="coda">
-      <a href="mailto:grempe-at-rubyforge-dot-org">Glenn Rempe</a>, 15th June 2007<br>
+      <a href="mailto:grempe-at-rubyforge-dot-org">Glenn Rempe</a>, 22nd June 2007<br>
     </p>
 </div>
 
