@@ -32,7 +32,7 @@ Capistrano::Configuration.instance.load do
   set :deploy_env, ENV['TARGET'] ||= "production"
   
   # defaults for new security groups
-  set :group_name, "#{application}"
+  set :group_name, nil
   set :group_description, "Default security group for the \"#{application}\" application."
   
   set :ip_protocol, 'tcp'

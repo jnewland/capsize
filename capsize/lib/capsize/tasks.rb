@@ -109,7 +109,6 @@ Capistrano::Configuration.instance.load do
       end
       
       
-      # TODO : this should be able to delete any keypair, not just the default one!
       desc <<-DESC
       Delete a keypair.
       This command will delete a keypair from EC2 and will also
@@ -126,11 +125,6 @@ Capistrano::Configuration.instance.load do
       DESC
       task :delete do
         
-        #unless capsize.get(:key_name).nil? || capsize.get(:key_name).empty?
-        #  key_name = capsize.get(:key_name)
-        #else
-        #  key_name = "#{application}"
-        #end
         key_name = capsize.get(:key_name) || "#{application}"
         
         confirm = (Capistrano::CLI.ui.ask("WARNING! Are you sure you want to delete the local and remote parts of the keypair with the name \"#{key_name}\"?\nYou will no longer be able to access any running instances that depend on this keypair!? (y/N): ").downcase == 'y')
@@ -201,11 +195,9 @@ Capistrano::Configuration.instance.load do
       end
       
       
-      # TODO : keypairs:create automatically saves the key pair with the name of the application in the config dir.  We
-      # should make it so that it uses that if it exists, and only get() it from the config if that is not found?
-      # TODO : ADD FULL CAP -E DOCS HERE
       desc <<-DESC
-      Runs an instance of :image_id with the keypair :key_name.
+      Start an EC2 instance.
+      Runs an instance of :image_id with the keypair :key_name and group :group_name.
       DESC
       task :run do
         begin
@@ -232,8 +224,8 @@ Capistrano::Configuration.instance.load do
           # override the roles set in deploy.rb with the server instance started here.
           # This is temporary and only remains defined for the length of this 
           # capistrano run!
-          set(:dns_name, response.reservationSet.item[0].instancesSet.item[0].dnsName)
-          set_default_roles_to_target_role
+          #set(:dns_name, response.reservationSet.item[0].instancesSet.item[0].dnsName)
+          #set_default_roles_to_target_role
           
         rescue Exception => e
           puts "The attempt to run an instance failed with the error : " + e
@@ -303,8 +295,10 @@ Capistrano::Configuration.instance.load do
       end
       
       
-      # TODO : ADD FULL CAP -E DOCS HERE
-      desc "Info about your instances."
+      desc <<-DESC
+      Describe current instances.
+      Will show the current metadata and status for all instances that you own.
+      DESC
       task :describe do
         
         begin
@@ -352,6 +346,44 @@ Capistrano::Configuration.instance.load do
       end
       
       
+      # TODO : add the rest of the security group description response items
+      desc <<-DESC
+      Describes security groups.
+      This will return a description of your security groups on EC2.
+      Pass in GROUP_NAME to limit to a specific group.
+      DESC
+      task :describe do
+        begin
+          capsize.describe_security_groups().securityGroupInfo.item.each do |group|
+            puts "[#{group.groupName}] : groupName = " + group.groupName
+            puts "[#{group.groupName}] : groupDescription = " + group.groupDescription
+            puts "[#{group.groupName}] : ownerId = " + group.ownerId
+            
+            unless group.ipPermissions.nil?
+              group.ipPermissions.item.each do |permission|
+                puts "  --"
+                puts "  ipPermissions:ipProtocol = " + permission.ipProtocol unless permission.ipProtocol.nil?
+                puts "  ipPermissions:fromPort = " + permission.fromPort unless permission.fromPort.nil?
+                puts "  ipPermissions:toPort = " + permission.toPort unless permission.toPort.nil?
+                
+                unless permission.ipRanges.nil?
+                  permission.ipRanges.item.each do |range|
+                    puts "  ipRanges:cidrIp = " + range.cidrIp unless range.cidrIp.nil?
+                  end
+                end
+                
+              end
+            end
+            
+            puts ""
+          end
+        rescue Exception => e
+          puts "The attempt to describe your security groups failed with error : " + e
+          raise e
+        end
+      end
+      
+      
       desc <<-DESC
       Delete a security group.
       Delete a security group specifying:
@@ -393,19 +425,17 @@ Capistrano::Configuration.instance.load do
       
       
       desc <<-DESC
-      Create a new security group and authorize firewall ingress for the specified GROUP_NAME on standard web ports:
-      
+      Create security group and open web ports.
+      Will create a new group which is named by default the same as your application.
+      Will also authorize firewall ingress for the specified GROUP_NAME on standard web ports:
         - 22 (SSH)
         - 80 (HTTP)
         - 443 (HTTPS)
-      
       By default the group name created is the same as your :application name
       in deploy.rb.  You can override the group name used by setting 
       :group_name or by passing in the environment variable GROUP_NAME='' 
-      on the cap command line.
-      
-      Any instances that were started and set to use the security group 
-      :group_name will be affected as soon as possible.
+      on the cap command line.  Any instances that were started and set 
+      to use the security group GROUP_NAME will be affected as soon as possible.
       DESC
       task :create_with_standard_ports do
         
@@ -463,16 +493,19 @@ Capistrano::Configuration.instance.load do
     end
     
     
-    # TODO : ADD DESCRIBE SECURITY GROUPS TASK AND PLUGIN METHOD!
-    
-    
     # IMAGE TASKS
     #########################################
     
     namespace :images do
       
-      # TODO : ADD FULL CAP -E DOCS HERE
-      desc "Describe machine images you can execute."
+      desc <<-DESC
+      Describe machine images you can execute.
+      Will show all machine images you have permission to execute by default.
+      You can limit by passing in:
+      OWNER_ID='self', OWNER_ID='amazon', OWNER_ID='__SOME_OWNER_ID__'
+      EXECUTABLE_BY='__SOME_OWNER_ID__'
+      IMAGE_ID='__SOME_IMAGE_ID__'
+      DESC
       task :describe do
         begin
           capsize.describe_images().imagesSet.item.each do |item|
@@ -497,10 +530,11 @@ Capistrano::Configuration.instance.load do
     
     
     # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
+    # TODO : What is the story with this on a cross platform basis?  Will the commands run an any linux? OS X? We know its not windows...
     # TODO : ADD FULL CAP -E DOCS HERE
+    # TODO : This doesn't use Net::SSH, but rather shells out to SSH to access the host w/ private key auth.  Should it?
     desc <<-DESC
-    Creates a secure root password, adds a user, and gives that user sudo privileges on aws_hostname.
-    This doesn't use Net::SSH, but rather shells out to SSH to access the host w/ private key auth.
+    Creates a secure root password, adds a user, and gives that user sudo privileges on the specified INSTANCE_ID.
     DESC
     task :setup_user do
       set :user, fetch(:user) {`whoami`.chomp}
@@ -517,6 +551,8 @@ Capistrano::Configuration.instance.load do
       
   end # end namespace :ec2
   
+  # TODO : Should this method remain?
+  #
   # This helper method is called in instances:run to set the default roles to 
   # the newly spawned EC2 instance.
   #
@@ -524,10 +560,10 @@ Capistrano::Configuration.instance.load do
   # listing as it generally would not be called directly.
   # Hack? : This method must be defined outside of a namespace or it will raise an exception!
   #
-  task :set_default_roles_to_target_role do
-    role :web, dns_name
-    role :app, dns_name
-    role :db, dns_name, :primary => true
-  end
+  #task :set_default_roles_to_target_role do
+  #  role :web, dns_name
+  #  role :app, dns_name
+  #  role :db, dns_name, :primary => true
+  #end
   
 end # end Capistrano::Configuration.instance.load

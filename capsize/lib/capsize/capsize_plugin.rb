@@ -181,10 +181,13 @@ module CapsizePlugin
                 :min_count => get(:min_count),
                 :max_count => get(:max_count),
                 :key_name => nil,
-                :group_name => get(:group_name),
+                :group_name => nil,
                 :user_data => get(:user_data),
                 :addressing_type => get(:addressing_type)
               }.merge(options)
+    
+    # What security group should we run as?
+    options[:group_name] = options[:group_name] || get(:group_name) || "#{application}"
     
     # We want to run the new instance using our public/private keypair if
     # one is defined for this application or of the user has explicitly passed
@@ -289,6 +292,15 @@ module CapsizePlugin
   end
   
   
+  #describe your security groups
+  def describe_security_groups(options = {})
+    amazon = connect()
+    options = {:group_name => nil}.merge(options)
+    options[:group_name] = options[:group_name] || get(:group_name) || ""
+    amazon.describe_security_groups(:group_name => options[:group_name])
+  end
+  
+  
   def delete_security_group(options = {})
     amazon = connect()
     
@@ -309,13 +321,15 @@ module CapsizePlugin
   def authorize_ingress(options = {})
     amazon = connect()
     
-    options = { :group_name => get(:group_name),
+    options = { :group_name => nil,
                 :ip_protocol => get(:ip_protocol),
                 :from_port => get(:from_port),
                 :to_port => get(:to_port),
                 :cidr_ip => get(:cidr_ip),
                 :source_security_group_name => get(:source_security_group_name),
                 :source_security_group_owner_id => get(:source_security_group_owner_id) }.merge(options)
+    
+    options[:group_name] = options[:group_name] || get(:group_name) || "#{application}"
     
     # Verify only that :group_name is passed.  This is the only REQUIRED parameter.
     # The others are optional and depend on what it is you are trying to 
@@ -340,13 +354,15 @@ module CapsizePlugin
   def revoke_ingress(options = {})
     amazon = connect()
     
-    options = { :group_name => get(:group_name),
+    options = { :group_name => nil,
                 :ip_protocol => get(:ip_protocol),
                 :from_port => get(:from_port),
                 :to_port => get(:to_port),
                 :cidr_ip => get(:cidr_ip),
                 :source_security_group_name => get(:source_security_group_name),
                 :source_security_group_owner_id => get(:source_security_group_owner_id) }.merge(options)
+    
+    options[:group_name] = options[:group_name] || get(:group_name) || "#{application}"
     
     # Verify only that :group_name is passed.  This is the only REQUIRED parameter.
     # The others are optional and depend on what it is you are trying to 
