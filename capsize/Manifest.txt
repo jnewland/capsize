@@ -9,7 +9,8 @@ examples/secure.yml.template
 lib/capsize/capsize_plugin.rb
 lib/capsize/configuration.rb
 lib/capsize/meta_tasks.rb
-lib/capsize/tasks.rb
+lib/capsize/ec2.rb
+lib/capsize/sqs.rb
 lib/capsize/version.rb
 lib/capsize.rb
 test/test_helper.rb
