@@ -10,6 +10,15 @@
 #++
 
 # require necessary libraries
-%w[ rubygems capistrano EC2 ostruct yaml fileutils ].each { |f| require f }
 
-Dir[File.join(File.dirname(__FILE__), 'capsize/**/*.rb')].sort.each { |lib| require lib }
+
+require 'capsize/version'
+require 'capsize/configuration'
+require 'capsize/capsize'
+require 'capsize/capsize_plugin'
+require 'capsize/ec2'
+require 'capsize/meta_tasks'
+require 'capsize/sqs_plugin'
+require 'capsize/sqs'
+
+%w[ rubygems capistrano EC2 ostruct yaml fileutils SQS builder ].each { |f| require f }

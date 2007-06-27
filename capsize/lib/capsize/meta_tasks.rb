@@ -184,7 +184,7 @@ Capistrano::Configuration.instance.load do
       task :check do
         
         begin
-          capsize.describe_images(:owner_id => "amazon")
+          ec2.describe_images(:owner_id => "amazon")
           puts "Congratulations!  Your credentials are verified and you are communicating properly with Amazon's EC2 service."
         rescue Exception => e
           puts "The test of your Capsize config failed with the following error: " + e

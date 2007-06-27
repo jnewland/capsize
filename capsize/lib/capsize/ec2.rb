@@ -35,7 +35,7 @@ Capistrano::Configuration.instance.load do
           puts "You don't seem to have set an instance ID..."
         else
           begin
-            capsize.get_console_output(:instance_id => instance_id).each_pair do |key, value|
+            capsize_ec2.get_console_output(:instance_id => instance_id).each_pair do |key, value|
               puts "#{key} = #{value}" unless key == "xmlns"
             end
           rescue Exception => e
@@ -65,11 +65,11 @@ Capistrano::Configuration.instance.load do
       DESC
       task :describe do
         begin
-          capsize.describe_keypairs().keySet.item.each do |item|
+          capsize_ec2.describe_keypairs().keySet.item.each do |item|
             puts "[#{item.keyName}] : keyName = " + item.keyName
             puts "[#{item.keyName}] : keyFingerprint = " + item.keyFingerprint
             
-            key_file = capsize.get_key_file(:key_name => item.keyName)
+            key_file = capsize_ec2.get_key_file(:key_name => item.keyName)
             
             puts "[#{item.keyName}] : OK : matching local private key found @ #{key_file}" if File.exists?(key_file)
             puts "[#{item.keyName}] : WARNING : matching local private key NOT found @ #{key_file}" unless File.exists?(key_file)
@@ -101,7 +101,7 @@ Capistrano::Configuration.instance.load do
       DESC
       task :create do
         begin
-          capsize.create_keypair()
+          capsize_ec2.create_keypair()
         rescue Exception => e
           puts "The attempt to create a keypair failed with the error : " + e
           raise e
@@ -131,7 +131,7 @@ Capistrano::Configuration.instance.load do
         
         if confirm
           begin
-            capsize.delete_keypair()
+            capsize_ec2.delete_keypair()
           rescue Exception => e
             puts "The attempt to delete the keypair failed with the error : " + e
             raise e
@@ -173,12 +173,12 @@ Capistrano::Configuration.instance.load do
         else
           
           begin
-            dns_name = capsize.get_dns_name_from_instance_id(:instance_id => capsize.get(:instance_id))
+            dns_name = capsize_ec2.get_dns_name_from_instance_id(:instance_id => capsize.get(:instance_id))
           rescue Exception => e
             puts "The attempt to get the DNS name for your instance failed with the error : " + e
           end
           
-          key_file = capsize.get_key_file
+          key_file = capsize_ec2.get_key_file
           
           # StrictHostKeyChecking=no ensures that you won't be prompted each time for adding
           # the remote host to your ssh known_hosts file.  This should be ok as the host IP
@@ -202,10 +202,10 @@ Capistrano::Configuration.instance.load do
       task :run do
         begin
           
-          response = capsize.run_instance
+          response = capsize_ec2.run_instance
           
           puts "An instance has been started with the following metadata:"
-          capsize.print_instance_description(response)
+          capsize_ec2.print_instance_description(response)
           
           instance_id = response.reservationSet.item[0].instancesSet.item[0].instanceId
           puts "You should be able to connect within a minute or two to this new instance via SSH (using public key authentication) with:\n"
@@ -214,7 +214,7 @@ Capistrano::Configuration.instance.load do
           
           # TODO : Tell the user exactly what instance info they need to put in their deploy.rb
           # to make the control of their server instances persistent!
-          #capsize.print_config_instructions(:response => response)
+          #capsize_ec2.print_config_instructions(:response => response)
           
           # TODO : I think this (set_default_roles_to_target_role) is only good if we are only 
           # dealing with one server.  But the values are temporary.  How should we handle multiple 
@@ -251,7 +251,7 @@ Capistrano::Configuration.instance.load do
           confirm = (Capistrano::CLI.ui.ask("WARNING! Really terminate instance \"#{instance_id}\"? (y/N): ").downcase == 'y')
           if confirm
             begin
-              response = capsize.terminate_instance({:instance_id => instance_id})
+              response = capsize_ec2.terminate_instance({:instance_id => instance_id})
               puts "The request to terminate instance_id #{instance_id} has been accepted.  Monitor the status of the request with 'cap ec2:instances:describe'"
             rescue Exception => e
               puts "The attempt to terminate the instance failed with error : " + e
@@ -282,7 +282,7 @@ Capistrano::Configuration.instance.load do
           confirm = (Capistrano::CLI.ui.ask("WARNING! Really reboot instance \"#{instance_id}\"? (y/N): ").downcase == 'y')
           if confirm
             begin
-              response = capsize.reboot_instance({:instance_id => instance_id})
+              response = capsize_ec2.reboot_instance({:instance_id => instance_id})
               puts "The request to reboot instance_id \"#{instance_id}\" has been accepted.  Monitor the status of the request with 'cap ec2:instances:describe'"
             rescue Exception => e
               puts "The attempt to reboot the instance_id \"#{instance_id}\" failed with error : " + e
@@ -302,13 +302,13 @@ Capistrano::Configuration.instance.load do
       task :describe do
         
         begin
-          result = capsize.describe_instances()
+          result = capsize_ec2.describe_instances()
         rescue Exception => e
           puts "The attempt to describe your instances failed with error : " + e
           raise e
         end
         
-        capsize.print_instance_description(result)
+        capsize_ec2.print_instance_description(result)
       end
       
     end
@@ -328,7 +328,7 @@ Capistrano::Configuration.instance.load do
       DESC
       task :create do
         begin
-          capsize.create_security_group()
+          capsize_ec2.create_security_group()
           puts "The security group \"#{capsize.get(:group_name)}\" has been created."
         rescue EC2::InternalError => e
           # BUG : Bug in EC2.  Is throwing InternalError instead of InvalidGroupDuplicate if you try to create a group that exists.  Catch both.
@@ -353,7 +353,7 @@ Capistrano::Configuration.instance.load do
       DESC
       task :describe do
         begin
-          capsize.describe_security_groups().securityGroupInfo.item.each do |group|
+          capsize_ec2.describe_security_groups().securityGroupInfo.item.each do |group|
             puts "[#{group.groupName}] : groupName = " + group.groupName
             puts "[#{group.groupName}] : groupDescription = " + group.groupDescription
             puts "[#{group.groupName}] : ownerId = " + group.ownerId
@@ -390,7 +390,7 @@ Capistrano::Configuration.instance.load do
       DESC
       task :delete do
         begin
-          capsize.delete_security_group()
+          capsize_ec2.delete_security_group()
           puts "The security group \"#{capsize.get(:group_name)}\" has been deleted."
         rescue Exception => e
           puts "The attempt to delete security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
@@ -410,7 +410,7 @@ Capistrano::Configuration.instance.load do
       task :authorize_ingress do
         
         begin
-          capsize.authorize_ingress({:group_name => capsize.get(:group_name), :from_port => capsize.get(:from_port), :to_port => capsize.get(:to_port)})
+          capsize_ec2.authorize_ingress({:group_name => capsize.get(:group_name), :from_port => capsize.get(:from_port), :to_port => capsize.get(:to_port)})
           puts "Firewall ingress granted for :group_name => #{capsize.get(:group_name)} on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)}"
         rescue EC2::InvalidPermissionDuplicate => e
           puts "The firewall ingress rule you specified for group name \"#{capsize.get(:group_name)}\" on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)} was already set (EC2::InvalidPermissionDuplicate)."
@@ -439,7 +439,7 @@ Capistrano::Configuration.instance.load do
       task :create_with_standard_ports do
         
         begin
-          capsize.create_security_group()
+          capsize_ec2.create_security_group()
           puts "The security group \"#{capsize.get(:group_name)}\" has been created."
         rescue EC2::InternalError => e
           # BUG : Bug in EC2.  Is throwing InternalError instead of InvalidGroupDuplicate if you try to create a group that exists.  Catch both.
@@ -457,7 +457,7 @@ Capistrano::Configuration.instance.load do
         ports = [22, 80, 443]
         ports.each { |port|
           begin
-            capsize.authorize_ingress({:group_name => capsize.get(:group_name), :from_port => "#{port}", :to_port => "#{port}"})
+            capsize_ec2.authorize_ingress({:group_name => capsize.get(:group_name), :from_port => "#{port}", :to_port => "#{port}"})
             puts "Firewall ingress granted for :group_name => #{capsize.get(:group_name)} on port #{port}"
           rescue EC2::InvalidPermissionDuplicate => e
             puts "The firewall ingress rule you specified for group name \"#{capsize.get(:group_name)}\" on port #{port} was already set (EC2::InvalidPermissionDuplicate)."
@@ -480,7 +480,7 @@ Capistrano::Configuration.instance.load do
       task :revoke_ingress do
         
         begin
-          capsize.revoke_ingress({:group_name => capsize.get(:group_name), :from_port => capsize.get(:from_port), :to_port => capsize.get(:to_port)})
+          capsize_ec2.revoke_ingress({:group_name => capsize.get(:group_name), :from_port => capsize.get(:from_port), :to_port => capsize.get(:to_port)})
           puts "Firewall ingress revoked for :group_name => #{capsize.get(:group_name)} on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)}"
         rescue Exception => e
           puts "The attempt to revoke firewall ingress permissions on port #{capsize.get(:from_port)} to #{capsize.get(:to_port)} for security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
@@ -507,7 +507,7 @@ Capistrano::Configuration.instance.load do
       DESC
       task :describe do
         begin
-          capsize.describe_images().imagesSet.item.each do |item|
+          capsize_ec2.describe_images().imagesSet.item.each do |item|
             puts "imageId = " + item.imageId unless item.imageId.nil?
             puts "imageLocation = " + item.imageLocation unless item.imageLocation.nil?
             puts "imageOwnerId = " + item.imageOwnerId unless item.imageOwnerId.nil?
