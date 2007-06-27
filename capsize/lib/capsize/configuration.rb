@@ -47,6 +47,7 @@ Capistrano::Configuration.instance.load do
   set :min_count, 1
   set :max_count, 1
   set :key_name, "#{application}"
+  set :queue_name, "#{application}"
   set :user_data, nil
   set :addressing_type, 'public'
   

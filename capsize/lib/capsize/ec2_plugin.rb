@@ -10,7 +10,7 @@
 #++
 
 module Capsize
-	module EC22
+	module CapsizeEC2
 	  include Capsize
 
 
@@ -500,4 +500,4 @@ module Capsize
 		end
 	end
 end
-Capistrano.plugin :capsize_ec2, Capsize::EC22
+Capistrano.plugin :capsize_ec2, Capsize::CapsizeEC2
