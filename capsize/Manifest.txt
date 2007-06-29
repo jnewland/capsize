@@ -7,7 +7,7 @@ examples/deploy.rb
 examples/capsize.yml.template
 examples/secure.yml.template
 lib/capsize/capsize.rb
-lib/capsize/capsize_plugin.rb
+lib/capsize/ec2_plugin.rb
 lib/capsize/configuration.rb
 lib/capsize/meta_tasks.rb
 lib/capsize/ec2.rb
