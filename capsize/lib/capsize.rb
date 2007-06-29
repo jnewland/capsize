@@ -11,14 +11,20 @@
 
 # require necessary libraries
 
-
-require 'capsize/version'
-require 'capsize/configuration'
-require 'capsize/capsize'
-require 'capsize/capsize_plugin'
-require 'capsize/ec2'
-require 'capsize/meta_tasks'
-require 'capsize/sqs_plugin'
-require 'capsize/sqs'
-
-%w[ rubygems capistrano EC2 ostruct yaml fileutils SQS builder ].each { |f| require f }
+%w[ rubygems
+    capistrano
+    EC2
+    ostruct
+    yaml
+    fileutils
+    SQS
+    builder
+    capsize/capsize
+    capsize/version
+    capsize/configuration
+    capsize/ec2_plugin
+    capsize/ec2
+    capsize/sqs_plugin
+    capsize/sqs
+    capsize/meta_tasks
+  ].each { |f| require f }
