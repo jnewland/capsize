@@ -34,11 +34,12 @@ Capistrano::Configuration.instance.load do
   # Determine where we will deploy to.  if TARGET is not specified 
   # then setup for 'production' environment by default.
   # TODO : CHANGE THIS TO TARGET_ENV IN HERE AND AMAZON-EC2, and in my app
+  # TODO : Make this work with capistrano-ext
   set :deploy_env, ENV['TARGET'] ||= "production"
   
   # defaults for new security groups
   set :group_name, nil
-  set :group_description, "Default security group for the \"#{application}\" application."
+  set :group_description, "Default security group for the application."
   
   set :ip_protocol, 'tcp'
   set :from_port, nil

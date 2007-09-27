@@ -1,6 +1,6 @@
 == 2007/06/13
 
-* Re-branded Capsize 'capsize' with capistrano no more...
+* Re-branded Capsize 'Capsize' with 'Capazon' no more...
 * Compatibility w/ Amazon EC2 (amazon-ec2) Gem v. >= 0.2.0
 * Lots of enhancements (See website or README.txt)
 

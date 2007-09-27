@@ -9,22 +9,28 @@
 # Home::      http://capsize.rubyforge.org
 #++
 
-# require necessary libraries
-
-%w[ rubygems
-    capistrano
-    EC2
-    ostruct
-    yaml
-    fileutils
-    SQS
-    builder
-    capsize/capsize
-    capsize/version
-    capsize/configuration
-    capsize/ec2_plugin
-    capsize/ec2
-    capsize/sqs_plugin
-    capsize/sqs
-    capsize/meta_tasks
-  ].each { |f| require f }
+# TODO : Add sqs and sqs_plugin when ready to include those.
+# Require all necessary libraries
+%w[
+  rubygems
+  capistrano
+  EC2
+  SQS
+  ostruct
+  yaml
+  fileutils
+  builder
+  capsize/version
+  capsize/configuration
+  capsize/meta_tasks
+  capsize/capsize.rb
+  capsize/ec2
+  capsize/ec2_plugin
+].each { |lib|
+  begin
+    require lib
+  rescue Exception => e
+    puts "The loading of '#{lib}' failed in capsize.rb with message : " + e
+    exit
+  end
+}

@@ -32,7 +32,7 @@
 
     <h1>Capsize : The Capistrano Plugin for EC2</h1>
     <div id="version" class="clickable" onclick='document.location = "http://rubyforge.org/projects/capsize"; return false'>
-      Get Version
+      <p>Get Version</p>
       <a href="http://rubyforge.org/projects/capsize" class="numbers">0.5.0</a>
     </div>
     <h2>&#x2192; &#8216;capsize&#8217;</h2>
@@ -80,10 +80,10 @@
 	<h3>Installing the gem</h3>
 
 
-	<p>Linux / <span class="caps">OS X</span> : <pre syntax="ruby">sudo gem install capsize --include-dependencies</pre></p>
+	<p>Linux / <span class="caps">OS X</span> : <pre class='syntax'><span class="ident">sudo</span> <span class="ident">gem</span> <span class="ident">install</span> <span class="ident">capsize</span> <span class="punct">--</span><span class="ident">include</span><span class="punct">-</span><span class="ident">dependencies</span></pre></p>
 
 
-	<p>Microsoft Windows : <pre syntax="ruby">gem install capsize --include-dependencies</pre></p>
+	<p>Microsoft Windows : <pre class='syntax'><span class="ident">gem</span> <span class="ident">install</span> <span class="ident">capsize</span> <span class="punct">--</span><span class="ident">include</span><span class="punct">-</span><span class="ident">dependencies</span></pre></p>
 
 
 	<p>Note : This gem has a number of dependencies for runtime and testing.  It is recommended that you choose &#8216;Y&#8217; to install dependencies when asked by the gem install tool (unless you passed in the&#8212;include-dependencies command which will take care of that automatically).</p>
@@ -101,41 +101,43 @@
 	<p>Edit the file config/deploy.rb and find something like the following:</p>
 
 
-<pre syntax="ruby">
-set :application, "foobar" 
-</pre>
+	<p><pre class='syntax'>
+<span class="ident">set</span> <span class="symbol">:application</span><span class="punct">,</span> <span class="punct">&quot;</span><span class="string">foobar</span><span class="punct">&quot;</span>
+</pre></p>
+
 
 	<p><span class="caps">IMPORTANT</span> : Ensure that the &#8220;require &#8216;capsize&#8217;&#8221; line comes <span class="caps">AFTER</span> the line in your configuration where you set your application name.  Capsize will not work properly if this is not done!  Now add this:</p>
 
 
-<pre syntax="ruby">
+	<p><pre class='syntax'>
 
-# #################################################################
-# CAPSIZE CONFIG SETTINGS
-# #################################################################
+<span class="comment"># #################################################################</span>
+<span class="comment"># CAPSIZE CONFIG SETTINGS</span>
+<span class="comment"># #################################################################</span>
 
-# Include the Capsize EC2 'cap' tasks
-# WARNING : This must be placed in your deploy.rb file anywhere 
-# AFTER the line where you set your application name!  Looks like:
-#   set :application, "foobar".
-# The application name is used by Capsize and the order matters!
-require 'capsize'
+<span class="comment"># Include the Capsize EC2 'cap' tasks</span>
+<span class="comment"># WARNING : This must be placed in your deploy.rb file anywhere </span>
+<span class="comment"># AFTER the line where you set your application name!  Looks like:</span>
+<span class="comment">#   set :application, &quot;foobar&quot;.</span>
+<span class="comment"># The application name is used by Capsize and the order matters!</span>
+<span class="ident">require</span> <span class="punct">'</span><span class="string">capsize</span><span class="punct">'</span>
 
-# Uncomment to override the standard capsize config dir
-# used for standard config info.
-#set :capsize_config_dir, 'config/capsize'
+<span class="comment"># Uncomment to override the standard capsize config dir</span>
+<span class="comment"># used for standard config info.</span>
+<span class="comment">#set :capsize_config_dir, 'config/capsize'</span>
 
-# Uncomment to override location used to store a 
-# secure config file with your AWS credentials,
-# and EC2 private keypair information.
-#set :capsize_secure_config_dir, 'config/capsize'
+<span class="comment"># Uncomment to override location used to store a </span>
+<span class="comment"># secure config file with your AWS credentials,</span>
+<span class="comment"># and EC2 private keypair information.</span>
+<span class="comment">#set :capsize_secure_config_dir, 'config/capsize'</span>
 
-# Uncomment to override the actual config file names 
-# that are stored in the config dirs noted above.
-#set :capsize_config_file_name, 'capsize.yml'
-#set :capsize_secure_config_file_name, 'secure.yml'
+<span class="comment"># Uncomment to override the actual config file names </span>
+<span class="comment"># that are stored in the config dirs noted above.</span>
+<span class="comment">#set :capsize_config_file_name, 'capsize.yml'</span>
+<span class="comment">#set :capsize_secure_config_file_name, 'secure.yml'</span>
 
-</pre>
+</pre></p>
+
 
 	<p>If you are picky about the location of your configuration files for Capsize feel free to modify the variables shown in the sample above to suit your environment.  The defaults should be fine for most.  It is easiest if you decide now and modify the file before we create your config in the following steps.</p>
 
@@ -143,27 +145,28 @@ require 'capsize'
 	<p>Once the Capsize section of deploy.rb is just how you&#8217;d like it you should be able to run &#8216;cap -T&#8217; to show all available Capistrano commands:</p>
 
 
-<pre syntax="ruby">
-# cap -T
-...
-cap ec2:console:output                             # Show instance console output.
-cap ec2:images:describe                            # Describe machine images you...
-cap ec2:instances:describe                         # Info about your instances.
-cap ec2:instances:reboot                           # Reboot an EC2 instance.
-cap ec2:instances:run                              # Runs an instance of :image_...
-cap ec2:instances:ssh                              # Open an SSH shell to instan...
-cap ec2:instances:terminate                        # Terminate an EC2 instance.
-cap ec2:keypairs:create                            # Create and store a new keyp...
-cap ec2:keypairs:delete                            # Delete a keypair.
-cap ec2:keypairs:describe                          # Describes your keypairs.
-cap ec2:security_groups:authorize_ingress          # Authorize firewall ingress ...
-cap ec2:security_groups:create                     # Create a security group.
-cap ec2:security_groups:create_with_standard_ports # in deploy.
-cap ec2:security_groups:delete                     # Delete a security group.
-cap ec2:security_groups:revoke_ingress             # Revoke firewall ingress for...
-cap ec2:setup                                      # Initialize the Capsize conf...
-...
-</pre>
+	<p><pre class='syntax'>
+<span class="comment"># cap -T</span>
+<span class="punct">...</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:console:output</span>                             <span class="comment"># Show instance console output.</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:images:describe</span>                            <span class="comment"># Describe machine images you...</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:instances:describe</span>                         <span class="comment"># Info about your instances.</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:instances:reboot</span>                           <span class="comment"># Reboot an EC2 instance.</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:instances:run</span>                              <span class="comment"># Runs an instance of :image_...</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:instances:ssh</span>                              <span class="comment"># Open an SSH shell to instan...</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:instances:terminate</span>                        <span class="comment"># Terminate an EC2 instance.</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:keypairs:create</span>                            <span class="comment"># Create and store a new keyp...</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:keypairs:delete</span>                            <span class="comment"># Delete a keypair.</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:keypairs:describe</span>                          <span class="comment"># Describes your keypairs.</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:security_groups:authorize_ingress</span>          <span class="comment"># Authorize firewall ingress ...</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:security_groups:create</span>                     <span class="comment"># Create a security group.</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:security_groups:create_with_standard_ports</span> <span class="comment"># in deploy.</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:security_groups:delete</span>                     <span class="comment"># Delete a security group.</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:security_groups:revoke_ingress</span>             <span class="comment"># Revoke firewall ingress for...</span>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:setup</span>                                      <span class="comment"># Initialize the Capsize conf...</span>
+<span class="punct">...</span>
+</pre></p>
+
 
 	<p>You should now see a group of tasks that start in the namespace &#8216;ec2:&#8217; similar to what you see above.</p>
 
@@ -171,9 +174,10 @@ cap ec2:setup                                      # Initialize the Capsize conf
 	<p>Finally, run the following Capsize command which will generate your initial Capsize config files and show you a help document that will take you through the remaining configuration steps and get you up and running with your first Capsize controlled <span class="caps">EC2</span> instance.</p>
 
 
-<pre syntax="ruby">
-cap ec2:setup
-</pre>
+	<p><pre class='syntax'>
+<span class="ident">cap</span> <span class="ident">ec2</span><span class="symbol">:setup</span>
+</pre></p>
+
 
 	<p>Enjoy!</p>
 
@@ -215,7 +219,7 @@ cap ec2:setup
 
 	<p>Comments, patches, and bug reports are very welcome. Please send an email to the address below or use the RubyForge forum for this project.</p>
     <p class="coda">
-      <a href="mailto:grempe-at-rubyforge-dot-org">Glenn Rempe</a>, 22nd June 2007<br>
+      <a href="mailto:grempe-at-rubyforge-dot-org">Glenn Rempe</a>, 26th September 2007<br>
     </p>
 </div>
 
