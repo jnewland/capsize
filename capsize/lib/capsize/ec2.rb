@@ -9,7 +9,9 @@
 # Home::      http://capsize.rubyforge.org
 #++
 
-Capistrano::Configuration.instance.load do
+@config = Capistrano::Configuration.new
+
+@config.load do
   
   namespace :ec2 do
     
@@ -53,7 +55,7 @@ Capistrano::Configuration.instance.load do
     #########################################
     
     namespace :keypairs do
-      
+# FIXME : Bug with shadowing existing method
       desc <<-DESC
       Describes your keypairs.
       This will return a text description of all of your personal keypairs created on EC2.
@@ -63,7 +65,7 @@ Capistrano::Configuration.instance.load do
       will also display whether you have a locally installed private key that matches the key_name of
       the public key being described.
       DESC
-      task :describe do
+      task :show do
         begin
           capsize_ec2.describe_keypairs().keySet.item.each do |item|
             puts "[#{item.keyName}] : keyName = " + item.keyName
@@ -76,7 +78,7 @@ Capistrano::Configuration.instance.load do
             puts "" 
           end
         rescue Exception => e
-          puts "The attempt to describe your keypairs failed with error : " + e
+          puts "The attempt to show your keypairs failed with error : " + e
           raise e
         end
       end
@@ -296,15 +298,15 @@ Capistrano::Configuration.instance.load do
       
       
       desc <<-DESC
-      Describe current instances.
+      Show and describe current instances.
       Will show the current metadata and status for all instances that you own.
       DESC
-      task :describe do
+      task :show do
         
         begin
           result = capsize_ec2.describe_instances()
         rescue Exception => e
-          puts "The attempt to describe your instances failed with error : " + e
+          puts "The attempt to show your instances failed with error : " + e
           raise e
         end
         
@@ -345,13 +347,12 @@ Capistrano::Configuration.instance.load do
         
       end
       
-      
       desc <<-DESC
-      Describes security groups.
+      Show and describes security groups.
       This will return a description of your security groups on EC2.
       Pass in GROUP_NAME to limit to a specific group.
       DESC
-      task :describe do
+      task :show do
         begin
           capsize_ec2.describe_security_groups().securityGroupInfo.item.each do |group|
             puts "[#{group.groupName}] : groupName = " + group.groupName
@@ -377,7 +378,7 @@ Capistrano::Configuration.instance.load do
             puts ""
           end
         rescue Exception => e
-          puts "The attempt to describe your security groups failed with error : " + e
+          puts "The attempt to show your security groups failed with error : " + e
           raise e
         end
       end
@@ -496,16 +497,16 @@ Capistrano::Configuration.instance.load do
     #########################################
     
     namespace :images do
-      
+
       desc <<-DESC
-      Describe machine images you can execute.
+      Show and describe machine images you can execute.
       Will show all machine images you have permission to execute by default.
       You can limit by passing in:
       OWNER_ID='self', OWNER_ID='amazon', OWNER_ID='__SOME_OWNER_ID__'
       EXECUTABLE_BY='__SOME_OWNER_ID__'
       IMAGE_ID='__SOME_IMAGE_ID__'
       DESC
-      task :describe do
+      task :show do
         begin
           capsize_ec2.describe_images().imagesSet.item.each do |item|
             puts "imageId = " + item.imageId unless item.imageId.nil?
@@ -516,7 +517,7 @@ Capistrano::Configuration.instance.load do
             puts "" 
           end
         rescue Exception => e
-          puts "The attempt to describe images failed with error : " + e
+          puts "The attempt to show images failed with error : " + e
           raise e
         end
       end

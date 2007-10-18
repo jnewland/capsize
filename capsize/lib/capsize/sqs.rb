@@ -9,7 +9,9 @@
 # Home::      http://capsize.rubyforge.org
 #++
 
-Capistrano::Configuration.instance.load do
+@config = Capistrano::Configuration.new
+
+@config.load do
   
   namespace :sqs do
     

@@ -9,23 +9,24 @@
 # Home::      http://capsize.rubyforge.org
 #++
 
-# TODO : Add sqs and sqs_plugin when ready to include those.
 # Require all necessary libraries
 %w[
   rubygems
-  capistrano
-  EC2
-  SQS
   ostruct
   yaml
   fileutils
   builder
+  capistrano
+  EC2
+  SQS
   capsize/version
-  capsize/configuration
-  capsize/meta_tasks
   capsize/capsize.rb
+  capsize/meta_tasks
   capsize/ec2
   capsize/ec2_plugin
+  capsize/sqs
+  capsize/sqs_plugin
+  capsize/configuration
 ].each { |lib|
   begin
     require lib
