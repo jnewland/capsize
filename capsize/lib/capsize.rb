@@ -18,7 +18,7 @@
   builder
   capistrano
   EC2
-  SQS
+  sqs
   capsize/version
   capsize/capsize.rb
   capsize/meta_tasks
