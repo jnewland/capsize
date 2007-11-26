@@ -192,7 +192,7 @@ module Capsize
 								}.merge(options)
 	
 			# What security group should we run as?
-			options[:group_name] = options[:group_name] || get(:group_name) || "#{application}"
+			options[:group_id] = options[:group_name] || get(:group_name) || "#{application}"
 	
 			# We want to run the new instance using our public/private keypair if
 			# one is defined for this application or of the user has explicitly passed
