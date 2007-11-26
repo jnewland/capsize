@@ -9,9 +9,7 @@
 # Home::      http://capsize.rubyforge.org
 #++
 
-@config = Capistrano::Configuration.new
-
-@config.load do
+Capistrano::Configuration.instance.load do
 
   namespace :ec2 do
     

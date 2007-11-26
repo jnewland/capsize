@@ -9,9 +9,7 @@
 # Home::      http://amazon-ec2-cap.rubyforge.org
 #++
 
-@config = Capistrano::Configuration.new
-
-@config.load do
+Capistrano::Configuration.instance.load do
   
   # Set reasonable defaults for all needed values so in theory this Cap plugin
   # will work out-of-the-box with no external config required.  Users
