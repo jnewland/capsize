@@ -51,6 +51,11 @@ module Capsize
       if fetch(:group_name, nil).nil?
         set symbol, fetch(:application)
       end
+    when :key_name
+      # the :key_name should fall back to the application name if not provided.
+      if fetch(:key_name, nil).nil?
+        set symbol, fetch(:application)
+      end
     end
 
 

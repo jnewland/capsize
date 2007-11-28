@@ -125,7 +125,7 @@ Capistrano::Configuration.instance.load do
       DESC
       task :delete do
         
-        key_name = capsize.get(:key_name) || "#{application}"
+        key_name = capsize.get(:key_name)
         
         confirm = (Capistrano::CLI.ui.ask("WARNING! Are you sure you want to delete the local and remote parts of the keypair with the name \"#{key_name}\"?\nYou will no longer be able to access any running instances that depend on this keypair!? (y/N): ").downcase == 'y')
         

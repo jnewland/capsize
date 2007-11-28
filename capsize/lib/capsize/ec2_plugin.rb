@@ -33,7 +33,7 @@ module Capsize
 		def get_key_file(options = {})
 			options = {:key_dir => nil, :key_name => nil}.merge(options)
 			key_dir = options[:key_dir] || get(:key_dir) || get(:capsize_secure_config_dir)
-			key_name = options[:key_name] || get(:key_name) || "#{application}"
+			key_name = options[:key_name] || get(:key_name)
 			return key_file = [key_dir, key_name].join('/') + '.key'
 		end
 
@@ -70,7 +70,7 @@ module Capsize
 			# default key_dir is set in the :capsize_config_dir variable
 			options = {:key_name => nil, :key_dir => nil}.merge(options)
 	
-			options[:key_name] = options[:key_name] || get(:key_name) || "#{application}"
+			options[:key_name] = options[:key_name] || get(:key_name)
 			options[:key_dir] = options[:key_dir] || get(:key_dir) || get(:capsize_secure_config_dir)
 	
 			#verify key_name and key_dir are set
@@ -119,7 +119,7 @@ module Capsize
 	
 			options = {:key_name => nil, :key_dir => nil}.merge(options)
 	
-			options[:key_name] = options[:key_name] || get(:key_name) || "#{application}"
+			options[:key_name] = options[:key_name] || get(:key_name)
 			options[:key_dir] = options[:key_dir] || get(:key_dir) || get(:capsize_secure_config_dir)
 	
 			raise Exception, "Keypair name required" if options[:key_name].nil? || options[:key_name].empty?
@@ -201,7 +201,7 @@ module Capsize
 			# private key stored in the config dir.
 	
 			# override application key_name if the user provided one in config or on the command line
-			options[:key_name] = options[:key_name] || get(:key_name) || "#{application}"
+			options[:key_name] = options[:key_name] || get(:key_name)
 	
 			# key_dir defaults to same as :capsize_config_dir variable
 			options[:key_dir] = options[:key_dir] || get(:key_dir) || get(:capsize_secure_config_dir)
