@@ -4,64 +4,64 @@
 
 # This file should be setup to be deployed by capistrano
 # along with the rest of your application.  This file should only
-# contain non-security related config info and thusly can be 
+# contain non-security related config info and thusly can be
 # safely versioned in your version control system.
 
 # I should be put in the RAILS_ROOT/config/capsize/secure.yml of your Ruby on Rails app
 # or the location of your choice if you override :capsize_config_dir
 
-# set variables in 'common' that are the same across 
+# set variables in 'common' that are the same across
 # ALL environments.  This helps us keep this file nice and DRY.
 common: &common
-  
+
   # KEYPAIR CONFIG
   ##########################################################
   #defaults to the name of the :application set in deploy.rb
   #key_name: 'my_cool_key_name'
-  
-  
+
+
   # CAPSIZE CONFIG
   ##########################################################
   # use an ssl connection to talk to EC2? true or false allowed (no quotes)
   # Defaults to true
   #use_ssl: true
-  
-  
+
+
   # SECURITY GROUP CONFIG
   ##########################################################
-  # Set the default security group to apply firewall ingress rules to.  
+  # Set the default security group to apply firewall ingress rules to.
   # Defaults, appropriately, to 'default' security group.
   #group_name: 'default'
-  
-  # Set the default security group ip protocol to apply firewall ingress rules to.  
+
+  # Set the default security group ip protocol to apply firewall ingress rules to.
   # Defaults, appropriately, to 'tcp'.
   #ip_protocol: 'tcp'
-  
+
   # other options you can override if needed
   #from_port: nil
   #to_port: nil
   #cidr_ip: '0.0.0.0/0'
   #source_security_group_name: nil
   #source_security_group_owner_id: nil
-  
-  
+
+
 development:
   <<: *common
-  
+
   # Uncomment and I only apply to the dev environment
   # or overwrite a common value
   #foo: 'bar'
-  
+
 test:
   <<: *common
 
 staging:
   <<: *common
-  
+
 production:
   <<: *common
-  
+
   # Uncomment and I only apply to the production environment
   # or overwrite a common value
   #foo: 'baz'
-  
+
