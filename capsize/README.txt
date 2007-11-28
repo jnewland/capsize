@@ -12,14 +12,30 @@ This project is in no way endorsed, sponsored by, or associated with Amazon, Ama
 * <tt>gem install capsize</tt>
 * Edit your your <tt>config/deploy.rb</tt>:
 
-    require 'capsize'
+<tt>
+# #################################################################
+# CAPSIZE EC2 GEM
+# #################################################################
 
-    set :application, "set your application name here"
-    set :repository,  "set your repository location here"
+# Include the Capsize EC2 'cap' tasks
+# WARNING : This must be placed in your deploy.rb file anywhere 
+# AFTER the line where you set your application name!  Looks like:
+#   set :application, "foobar".
+# The application name is used by Capsize and the order matters.
+require 'capsize'
+
+# Use this to overwrite the standard capsize config dir locations
+#set :capsize_config_dir, 'config/capsize'
+#set :capsize_secure_config_dir, 'config/capsize'
+
+# Use these to overwrite the actual config file names stored in the config dirs.
+#set :capsize_config_file_name, 'capsize.yml'
+#set :capsize_secure_config_file_name, 'secure.yml'
+</tt>
 
 * Run <tt>cap deploy:setup</tt>
 * Paste the generated config into config/deploy.rb 
-    
+
 == Tasks
 
 ===== Notes:
