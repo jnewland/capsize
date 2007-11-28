@@ -56,6 +56,11 @@ module Capsize
       if fetch(:key_name, nil).nil?
         set symbol, fetch(:application)
       end
+    when :group_description
+      # the :group_description should fall back to the application name if not provided.
+      if fetch(:group_description, nil).nil?
+        set symbol, fetch(:application)
+      end
     end
 
 

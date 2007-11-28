@@ -287,7 +287,7 @@ module Capsize
 			options = {:group_name => nil, :group_description => nil}.merge(options)
 	
 			options[:group_name] = options[:group_name] || get(:group_name)
-			options[:group_description] = options[:group_description] || get(:group_description) || "#{application}"
+			options[:group_description] = options[:group_description] || get(:group_description)
 	
 			raise Exception, "Group name required" if options[:group_name].nil? || options[:group_name].empty?
 			raise Exception, "Group description required" if options[:group_description].nil? || options[:group_description].empty?
