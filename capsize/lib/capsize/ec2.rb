@@ -440,11 +440,6 @@ Capistrano::Configuration.instance.load do
         begin
           capsize_ec2.create_security_group()
           puts "The security group \"#{capsize.get(:group_name)}\" has been created."
-        rescue EC2::InternalError => e
-          # BUG : Bug in EC2.  Is throwing InternalError instead of InvalidGroupDuplicate if you try to create a group that exists.  Catch both.
-          # REMOVE THIS RESCUE WHEN BUG IS FIXED BY AWS
-          puts "The security group you specified for group name \"#{capsize.get(:group_name)}\" already exists (EC2::InternalError)."
-          # Don't re-raise this exception
         rescue EC2::InvalidGroupDuplicate => e
           puts "The security group you specified for group name \"#{capsize.get(:group_name)}\" already exists (EC2::InvalidGroupDuplicate)."
           # Don't re-raise this exception

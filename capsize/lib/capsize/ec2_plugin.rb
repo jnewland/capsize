@@ -192,7 +192,7 @@ module Capsize
 								}.merge(options)
 	
 			# What security group should we run as?
-			options[:group_id] = options[:group_name] || get(:group_name) || "#{application}"
+			options[:group_id] = options[:group_name] || get(:group_name)
 	
 			# We want to run the new instance using our public/private keypair if
 			# one is defined for this application or of the user has explicitly passed
@@ -286,7 +286,7 @@ module Capsize
 			# default group_description is set in the :group_description variable
 			options = {:group_name => nil, :group_description => nil}.merge(options)
 	
-			options[:group_name] = options[:group_name] || get(:group_name) || "#{application}"
+			options[:group_name] = options[:group_name] || get(:group_name)
 			options[:group_description] = options[:group_description] || get(:group_description) || "#{application}"
 	
 			raise Exception, "Group name required" if options[:group_name].nil? || options[:group_name].empty?
@@ -312,7 +312,7 @@ module Capsize
 			# default group_name is the same as our appname, unless specifically overriden in capsize.yml
 			options = {:group_name => nil}.merge(options)
 	
-			options[:group_name] = options[:group_name] || get(:group_name) || "#{application}"
+			options[:group_name] = options[:group_name] || get(:group_name)
 	
 			raise Exception, "Group name required" if options[:group_name].nil? || options[:group_name].empty?
 	
@@ -334,7 +334,7 @@ module Capsize
 									:source_security_group_name => get(:source_security_group_name),
 									:source_security_group_owner_id => get(:source_security_group_owner_id) }.merge(options)
 	
-			options[:group_name] = options[:group_name] || get(:group_name) || "#{application}"
+			options[:group_name] = options[:group_name] || get(:group_name)
 	
 			# Verify only that :group_name is passed.	 This is the only REQUIRED parameter.
 			# The others are optional and depend on what it is you are trying to 
@@ -367,7 +367,7 @@ module Capsize
 									:source_security_group_name => get(:source_security_group_name),
 									:source_security_group_owner_id => get(:source_security_group_owner_id) }.merge(options)
 	
-			options[:group_name] = options[:group_name] || get(:group_name) || "#{application}"
+			options[:group_name] = options[:group_name] || get(:group_name)
 	
 			# Verify only that :group_name is passed.	 This is the only REQUIRED parameter.
 			# The others are optional and depend on what it is you are trying to 
