@@ -77,7 +77,6 @@ module Capsize
       raise Exception, "Keypair name required" if options[:key_name].nil? || options[:key_name].empty?
       raise Exception, "Keypair directory required" if options[:key_dir].nil? || options[:key_dir].empty?
 
-      # determine the local key file name and delete it
       key_file = get_key_file(:key_name => options[:key_name], :key_dir => options[:key_dir])
 
       # Verify keypair doesn't already exist on EC2 servers...
@@ -96,19 +95,16 @@ module Capsize
       raise Exception, file_exists_message if File.exists?(key_file)
 
       #All is good, so we create the new keypair
-      puts "Generating keypair... (this may take a few seconds)"
       private_key = amazon.create_keypair(:key_name => options[:key_name])
-      puts "A keypair with the name \"#{private_key.keyName}\" has been generated..."
 
       # write private key to file
       File.open(key_file, 'w') do |file|
         file.write(private_key.keyMaterial)
       end
-      puts "The generated private key has been saved in #{key_file}"
 
       # Cross platform CHMOD, make the file owner +rw, group and other -all
       File.chmod 0600, key_file
-
+      return [key_name, key_file]
     end
 
 

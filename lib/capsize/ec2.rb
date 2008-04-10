@@ -101,7 +101,9 @@ Capistrano::Configuration.instance.load do
       DESC
       task :create do
         begin
-          capsize_ec2.create_keypair()
+          puts "Generating keypair... (this may take a few seconds)"
+          key_name, key_file = capsize_ec2.create_keypair()
+          puts "A keypair with the name \"#{key_name}\" has been generated and saved here:\n #{key_file}"
         rescue Exception => e
           puts "The attempt to create a keypair failed with the error : " + e
           raise e
