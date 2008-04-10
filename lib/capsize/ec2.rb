@@ -412,7 +412,7 @@ Capistrano::Configuration.instance.load do
 
         begin
           capsize_ec2.authorize_ingress({:group_name => capsize.get(:group_name), :from_port => capsize.get(:from_port), :to_port => capsize.get(:to_port)})
-          puts "Firewall ingress granted for :group_name => #{capsize.get(:group_name)} on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)}"
+          puts "Firewall ingress granted for #{capsize.get(:group_name)} on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)}"
         rescue EC2::InvalidPermissionDuplicate => e
           puts "The firewall ingress rule you specified for group name \"#{capsize.get(:group_name)}\" on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)} was already set (EC2::InvalidPermissionDuplicate)."
           # Don't re-raise this exception
