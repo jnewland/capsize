@@ -252,7 +252,7 @@ Capistrano::Configuration.instance.load do
           if confirm
             begin
               response = capsize_ec2.terminate_instance({:instance_id => instance_id})
-              puts "The request to terminate instance_id #{instance_id} has been accepted.  Monitor the status of the request with 'cap ec2:instances:describe'"
+              puts "The request to terminate instance_id #{instance_id} has been accepted.  Monitor the status of the request with 'cap ec2:instances:show'"
             rescue Exception => e
               puts "The attempt to terminate the instance failed with error : " + e
               raise e
@@ -283,7 +283,7 @@ Capistrano::Configuration.instance.load do
           if confirm
             begin
               response = capsize_ec2.reboot_instance({:instance_id => instance_id})
-              puts "The request to reboot instance_id \"#{instance_id}\" has been accepted.  Monitor the status of the request with 'cap ec2:instances:describe'"
+              puts "The request to reboot instance_id \"#{instance_id}\" has been accepted.  Monitor the status of the request with 'cap ec2:instances:show'"
             rescue Exception => e
               puts "The attempt to reboot the instance_id \"#{instance_id}\" failed with error : " + e
               raise e
