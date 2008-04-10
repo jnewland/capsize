@@ -175,7 +175,7 @@ Capistrano::Configuration.instance.load do
         else
 
           begin
-            dns_name = capsize_ec2.get_dns_name_from_instance_id(:instance_id => capsize.get(:instance_id))
+            dns_name = capsize_ec2.hostname_from_instance_id(capsize.get(:instance_id))
           rescue Exception => e
             puts "The attempt to get the DNS name for your instance failed with the error : " + e
           end
@@ -188,7 +188,7 @@ Capistrano::Configuration.instance.load do
           # For the ultra paranoid who are concerned about man-in-the-middle attacks you
           # may want to do ssh manually, and perhaps not use no-password public key auth.
           #
-          # example connect :  ssh -o StrictHostKeyChecking=no -i config/myappkey.key root@ec2-72-44-51-000.z-1.compute-1.amazonaws.com
+          # example connect :  ssh -o StrictHostKeyChecking=no -i config/id_rsa-myappkey root@ec2-72-44-51-000.z-1.compute-1.amazonaws.com
           puts "Trying to connect with host with local shell command:"
           puts "ssh -o StrictHostKeyChecking=no -i #{key_file} root@#{dns_name}"
           puts "--\n"
@@ -210,8 +210,8 @@ Capistrano::Configuration.instance.load do
           capsize_ec2.print_instance_description(response)
 
           instance_id = response.reservationSet.item[0].instancesSet.item[0].instanceId
-          puts "You should be able to connect within a minute or two to this new instance via SSH (using public key authentication) with:\n"
-          puts "cap ec2:instances:ssh INSTANCE_ID='#{instance_id}'"
+          puts "SSH:"
+          puts "cap -s instance_id='#{instance_id}' ec2:instances:ssh"
           puts ""
 
           # TODO : Tell the user exactly what instance info they need to put in their deploy.rb
@@ -454,7 +454,7 @@ Capistrano::Configuration.instance.load do
         ports.each { |port|
           begin
             capsize_ec2.authorize_ingress({:group_name => capsize.get(:group_name), :from_port => "#{port}", :to_port => "#{port}"})
-            puts "Firewall ingress granted for :group_name => #{capsize.get(:group_name)} on port #{port}"
+            puts "Firewall ingress granted for #{capsize.get(:group_name)} on port #{port}"
           rescue EC2::InvalidPermissionDuplicate => e
             puts "The firewall ingress rule you specified for group name \"#{capsize.get(:group_name)}\" on port #{port} was already set (EC2::InvalidPermissionDuplicate)."
             # Don't re-raise this exception
@@ -519,46 +519,6 @@ Capistrano::Configuration.instance.load do
 
     end
 
-
-    # CAPSIZE TASKS
-    #########################################
-
-
-    # TODO : GET THIS TASK WORKING WITH NEW AMAZON-EC2
-    # TODO : What is the story with this on a cross platform basis?  Will the commands run an any linux? OS X? We know its not windows...
-    # TODO : ADD FULL CAP -E DOCS HERE
-    # TODO : This doesn't use Net::SSH, but rather shells out to SSH to access the host w/ private key auth.  Should it?
-    desc <<-DESC
-    Creates a secure root password, adds a user, and gives that user sudo privileges on the specified INSTANCE_ID.
-    DESC
-    task :setup_user do
-      set :user, fetch(:user) {`whoami`.chomp}
-      puts "\nConnecting to #{aws_hostname}..."
-      puts "\nPlease create a secure root password"
-      system "ssh -o StrictHostKeyChecking=no -i #{aws_private_key_path} root@#{aws_hostname} passwd"
-      puts "\nCreating #{user} user"
-      system "ssh -o StrictHostKeyChecking=no -i #{aws_private_key_path} root@#{aws_hostname} 'useradd -m -G wheel -s /bin/bash #{user} && passwd #{user}'"
-      puts "Adding wheel group to sudoers"
-      system "ssh -o StrictHostKeyChecking=no -i #{aws_private_key_path} root@#{aws_hostname} 'chmod 640 /etc/sudoers; echo -e \"#{user}\tALL=(ALL)\tALL\" >> /etc/sudoers;chmod 440 /etc/sudoers'"
-      puts "Ensuring #{user} has permissions on #{deploy_to}"
-      system "ssh -o StrictHostKeyChecking=no -i #{aws_private_key_path} root@#{aws_hostname} 'umask 02 && mkdir -p #{deploy_to} && chown #{user}:wheel #{deploy_to}'"
-    end
-
   end # end namespace :ec2
-
-  # TODO : Should this method remain?
-  #
-  # This helper method is called in instances:run to set the default roles to
-  # the newly spawned EC2 instance.
-  #
-  # no desc "" is provided to ensure this method does not show up in 'cap -T'
-  # listing as it generally would not be called directly.
-  # Hack? : This method must be defined outside of a namespace or it will raise an exception!
-  #
-  #task :set_default_roles_to_target_role do
-  #  role :web, dns_name
-  #  role :app, dns_name
-  #  role :db, dns_name, :primary => true
-  #end
 
 end # end Capistrano::Configuration.instance.load

@@ -51,6 +51,7 @@ Capistrano::Configuration.instance.load do
   set :image_id, nil
   set :min_count, 1
   set :max_count, 1
+  set :instance_type, 'm1.small'
 # FIXME : Breaks loading of this file and tests
 #  set :key_name, "#{application}"
 #  set :queue_name, "#{application}"

@@ -18,23 +18,60 @@ module Capsize
     #########################################
 
 
-    def get_dns_name_from_instance_id(options = {})
+    def hostname_from_instance_id(instance_id = nil)
+      raise Exception, "Instance ID required" if instance_id.nil? || instance_id.empty?
+
       amazon = connect()
-      options = {:instance_id => ""}.merge(options)
 
-      raise Exception, "Instance ID required" if options[:instance_id].nil? || options[:instance_id].empty?
-
-      response = amazon.describe_instances(:instance_id => options[:instance_id])
+      response = amazon.describe_instances(:instance_id => instance_id)
       return dns_name = response.reservationSet.item[0].instancesSet.item[0].dnsName
     end
 
+    def hostnames_from_instance_ids(ids = [])
+      ids.collect { |id| hostname_from_instance_id(id) }
+    end
+
+    def hostnames_from_group(group_name = nil)
+      hostnames = []
+      return hostnames if group_name.nil?
+      instances = describe_instances
+      return hostnames if instances.nil?
+      return hostnames if instances.reservationSet.nil?
+      instances.reservationSet.item.each do |reservation|
+        hostname = nil
+        matches = false
+        running = false
+        unless reservation.groupSet.nil?
+          reservation.groupSet.item.each do |group|
+            matches = group.groupId == group_name
+          end
+        end
+
+        unless reservation.instancesSet.nil?
+          reservation.instancesSet.item.each do |instance|
+            hostname = instance.dnsName
+            running = (!instance.instanceState.nil? && (instance.instanceState.name == "running"))
+          end
+        end
+        hostnames << hostname if matches and running
+      end
+      return hostnames
+    end
+
+    def role_from_security_group(role, security_group, *args)
+      options = args.last.is_a?(Hash) ? args.pop : {}
+      options = {:user => 'root', :ssh_options => { :keys => [capsize_ec2.get_key_file] }}.merge(options)
+      role(role, options) do
+        hostnames_from_group(security_group)
+      end
+    end
 
     # build the key file path from key_dir and key_file
     def get_key_file(options = {})
       options = {:key_dir => nil, :key_name => nil}.merge(options)
       key_dir = options[:key_dir] || get(:key_dir) || get(:capsize_secure_config_dir)
       key_name = options[:key_name] || get(:key_name)
-      return key_file = [key_dir, key_name].join('/') + '.key'
+      return key_file = [key_dir, "id_rsa-" + key_name].join('/')
     end
 
 
@@ -60,8 +97,6 @@ module Capsize
       amazon.describe_keypairs(:key_name => options[:key_name])
     end
 
-
-    # TODO : Is there a way to extract the 'puts' calls from here and make this have less 'view' code?
     #sets up a keypair named options[:key_name] and writes out the private key to options[:key_dir]
     def create_keypair(options = {})
       amazon = connect()
@@ -189,7 +224,7 @@ module Capsize
                 }.merge(options)
 
       # What security group should we run as?
-      options[:group_id] = options[:group_name] || get(:group_name)
+      options[:group_id] = (options[:group_name] || get(:group_name) || "").split(',')
 
       # We want to run the new instance using our public/private keypair if
       # one is defined for this application or of the user has explicitly passed
@@ -242,13 +277,41 @@ module Capsize
         instance = amazon.describe_instances(:instance_id => instance_id)
         raise "Server Not Running" unless instance.reservationSet.item[0].instancesSet.item[0].instanceState.name == "running"
         puts "Instance #{instance_id} is 'running'"
-        return instance
       rescue
         puts "."
         sleep(10)
         tries += 1
         retry unless tries == 35
         raise "Instance #{instance_id} never moved to state 'running'!"
+      end
+
+      #loop waiting to get the public key
+      puts "Checking every 10 seconds detect that we can SSH into this instance for up to 5 minutes"
+      tries = 0
+      begin
+        require 'timeout'
+        begin
+          Timeout::timeout(5) do
+            system("ssh -o StrictHostKeyChecking=no -o PasswordAuthentication=no -i #{get_key_file} root@#{hostname_from_instance_id(instance_id)} echo success") or raise "SSH Auth Failure"
+          end
+        rescue Timeout::Error
+          raise "SSH timed out..."
+        end
+        puts "SSH is up! Grabbing the public key..."
+        if system "scp -i #{get_key_file} root@#{hostname_from_instance_id(instance_id)}:/mnt/openssh_id.pub #{get_key_file}.pub"
+          puts "Public key saved at #{get_key_file}.pub"
+        else
+          puts "Error grabbing public key"
+        end
+        return instance
+      rescue Exception => e
+        puts e
+        puts "retrying in 10 seconds..."
+        sleep(10)
+        tries += 1
+        retry unless tries == 35
+        puts "We couldn't ever SSH in!"
+        return instance
       end
 
     end
