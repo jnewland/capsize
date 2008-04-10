@@ -10,11 +10,11 @@
 #++
 
 Capistrano::Configuration.instance.load do
-  
+
   namespace :sqs do
-    
+
     namespace :messages do
-      
+
       task :receive do
         message = capsize_sqs.receive_message
         unless message.nil?
@@ -34,11 +34,11 @@ Capistrano::Configuration.instance.load do
           puts "Message sent to #{capsize.get(:queue_name)} Queue"
         end
       end
-      
+
     end
 
     namespace :queue do
-      
+
       task :delete do
         begin
           raise Exception unless capsize_sqs.delete
@@ -49,7 +49,7 @@ Capistrano::Configuration.instance.load do
           puts "Queue #{queue_name} deleted"
         end
       end
-      
+
       task :delete! do
         begin
           raise Exception unless capsize_sqs.delete!
@@ -60,7 +60,7 @@ Capistrano::Configuration.instance.load do
           puts "Queue #{queue_name} deleted"
         end
       end
-      
+
     end
 
   end
