@@ -177,7 +177,7 @@ module Capsize
 
 
 		# Run EC2 instance(s)
-		# TODO : Deal with starting multiple instances!	 Now only single instances are properly handled.
+		# TODO : Deal with starting multiple instances! Now only single instances are properly handled.
 		# TODO : Is there a way to extract the 'puts' calls from here and make this have less 'view' code?
 		def run_instance(options = {})
 			amazon = connect()
@@ -188,7 +188,8 @@ module Capsize
 									:key_name => nil,
 									:group_name => nil,
 									:user_data => get(:user_data),
-									:addressing_type => get(:addressing_type)
+									:addressing_type => get(:addressing_type),
+									:instance_type => get(:instance_type)
 								}.merge(options)
 	
 			# What security group should we run as?
@@ -481,6 +482,7 @@ module Capsize
 								puts "	instancesSet:privateDnsName = " + instance.privateDnsName unless instance.privateDnsName.nil?
 								puts "	instancesSet:dnsName = " + instance.dnsName unless instance.dnsName.nil?
 								puts "	instancesSet:reason = " + instance.reason unless instance.reason.nil?
+								puts "	instancesSet:reason = " + instance.launchTime unless instance.launchTime.nil?
 								puts "	instancesSet:amiLaunchIndex = " + instance.amiLaunchIndex
 						
 								unless instance.instanceState.nil?
