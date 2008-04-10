@@ -17,16 +17,9 @@ lib/capsize/meta_tasks.rb
 lib/capsize/sqs.rb
 lib/capsize/sqs_plugin.rb
 lib/capsize/version.rb
-script/destroy
-script/generate
-script/txt2html
 setup.rb
 tasks/deployment.rake
 tasks/environment.rake
 tasks/website.rake
 test/test_capsize.rb
 test/test_helper.rb
-website/index.txt
-website/javascripts/rounded_corners_lite.inc.js
-website/stylesheets/screen.css
-website/template.rhtml
