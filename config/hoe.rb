@@ -1,7 +1,7 @@
 require 'capsize/version'
 
-AUTHOR = 'Glenn Rempe'  # can also be an array of Authors
-EMAIL = "grempe@rubyforge.org"
+AUTHOR = ['Jesse Newland','Glenn Rempe']  # can also be an array of Authors
+EMAIL = "jnewland@gmail.com"
 DESCRIPTION = "Capsize is a Capistrano plugin used to provide an easy way to manage and script interaction with the Amazon EC2 service using the amazon-ec2 Ruby gem."
 GEM_NAME = 'capsize' # what ppl will type to install your gem
 RUBYFORGE_PROJECT = 'capsize' # The unix name for your project
