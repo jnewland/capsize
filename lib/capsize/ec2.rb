@@ -401,12 +401,12 @@ Capistrano::Configuration.instance.load do
 
         begin
           capsize_ec2.authorize_ingress({:group_name => capsize.get(:group_name), :from_port => capsize.get(:from_port), :to_port => capsize.get(:to_port)})
-          puts "Firewall ingress granted for #{capsize.get(:group_name)} on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)}"
+          puts "Firewall ingress granted"
         rescue EC2::InvalidPermissionDuplicate => e
-          puts "The firewall ingress rule you specified for group name \"#{capsize.get(:group_name)}\" on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)} was already set (EC2::InvalidPermissionDuplicate)."
+          puts "The firewall ingress rule you specified for group name \"#{capsize.get(:group_name)}\" was already set (EC2::InvalidPermissionDuplicate)."
           # Don't re-raise this exception
         rescue Exception => e
-          puts "The attempt to allow firewall ingress on port #{capsize.get(:from_port)} to #{capsize.get(:to_port)} for security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
+          puts "The attempt to allow firewall ingress for security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
           raise e
         end
 
@@ -466,9 +466,9 @@ Capistrano::Configuration.instance.load do
 
         begin
           capsize_ec2.revoke_ingress({:group_name => capsize.get(:group_name), :from_port => capsize.get(:from_port), :to_port => capsize.get(:to_port)})
-          puts "Firewall ingress revoked for :group_name => #{capsize.get(:group_name)} on ports #{capsize.get(:from_port)} to #{capsize.get(:to_port)}"
+          puts "Firewall ingress revoked for #{capsize.get(:group_name)}"
         rescue Exception => e
-          puts "The attempt to revoke firewall ingress permissions on port #{capsize.get(:from_port)} to #{capsize.get(:to_port)} for security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
+          puts "The attempt to revoke firewall ingress permissions for security group \"#{capsize.get(:group_name)}\" failed with the error : " + e
           raise e
         end
 
