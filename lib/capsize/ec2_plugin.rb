@@ -241,28 +241,20 @@ module Capsize
       response = amazon.run_instances(options)
 
       instance_id = response.instancesSet.item[0].instanceId
-      puts "Instance #{instance_id} startup in progress..."
-
-      # loop checking for instance pending notification
-      tries = 0
-      begin
-        instance = amazon.describe_instances(:instance_id => instance_id)
-        raise "Waiting." unless response.instancesSet.item[0].instanceState.name == "pending"
-        puts "Instance #{instance_id} entered state 'pending'"
-      rescue
-        sleep(10)
-        tries += 1
-        retry unless tries == 35
-        raise "Instance #{instance_id} never moved to state 'pending'!"
-      end
+      puts "Instance #{instance_id} startup in progress"
+      
+      #set scope outside of block
+      instance = nil
 
       #loop checking for confirmation that instance is running
       tries = 0
       begin
         instance = amazon.describe_instances(:instance_id => instance_id)
         raise "Server Not Running" unless instance.reservationSet.item[0].instancesSet.item[0].instanceState.name == "running"
+        puts ""
         puts "Instance #{instance_id} entered state 'running'"
       rescue
+        $stdout.print '.'
         sleep(10)
         tries += 1
         retry unless tries == 35
@@ -280,21 +272,44 @@ module Capsize
         rescue Timeout::Error
           raise "SSH timed out..."
         end
+        puts ""
         puts "SSH is up! Grabbing the public key..."
-        if system "scp -i #{get_key_file} root@#{hostname_from_instance_id(instance_id)}:/mnt/openssh_id.pub #{get_key_file}.pub"
+        if system "scp -o StrictHostKeyChecking=no -i #{get_key_file} root@#{hostname_from_instance_id(instance_id)}:/mnt/openssh_id.pub #{get_key_file}.pub"
           puts "Public key saved at #{get_key_file}.pub"
         else
           puts "Error grabbing public key"
         end
-        return instance
       rescue Exception => e
+        $stdout.print '.'
         sleep(10)
         tries += 1
         retry unless tries == 35
         puts "We couldn't ever SSH in!"
-        return instance
+      end
+      
+      #scripts
+      if File.exists?(fetch(:capsize_config_dir)+"/scripts")
+        begin
+          instance = amazon.describe_instances(:instance_id => instance_id)
+          instance.reservationSet.item.first.groupSet.item.map { |g| g.groupId }.sort.each do |group|
+            script_path = fetch(:capsize_config_dir)+"/scripts/#{group}"
+            if File.exists?(script_path)
+              begin
+                puts "Found script for security group #{group}, running"
+                system("scp -o StrictHostKeyChecking=no -i #{get_key_file} #{script_path} root@#{hostname_from_instance_id(instance_id)}:/tmp/") or raise "SCP ERROR"
+                system("ssh -o StrictHostKeyChecking=no -i #{get_key_file} root@#{hostname_from_instance_id(instance_id)} chmod o+x /tmp/#{group}") or raise "Error changing script permissions"
+                system("ssh -o StrictHostKeyChecking=no -i #{get_key_file} root@#{hostname_from_instance_id(instance_id)} /tmp/#{group}") or raise "Error running script"
+              rescue Exception => e
+                puts e
+              end
+            end
+          end
+        rescue Exception => e
+          puts e
+        end
       end
 
+      return instance
     end
 
 
@@ -389,6 +404,14 @@ module Capsize
         set :to_port, options[:from_port] if options[:to_port].nil? || options[:to_port].empty?
         options[:to_port] = to_port if options[:to_port].nil? || options[:to_port].empty?
       end
+      
+      #if source_security_group_name and source_security_group_owner_id are specified, unset the incompatible options
+      if !options[:source_security_group_name].nil? && !options[:source_security_group_owner_id].nil?
+        options.delete(:ip_protocol)
+        options.delete(:from_port)
+        options.delete(:to_port)
+        options.delete(:cidr_ip)        
+      end
 
       amazon.authorize_security_group_ingress(options)
 
@@ -421,6 +444,14 @@ module Capsize
       unless options[:from_port].nil? || options[:from_port].empty?
         set :to_port, options[:from_port] if options[:to_port].nil? || options[:to_port].empty?
         options[:to_port] = to_port if options[:to_port].nil? || options[:to_port].empty?
+      end
+      
+      #if source_security_group_name and source_security_group_owner_id are specified, unset the incompatible options
+      if !options[:source_security_group_name].nil? && !options[:source_security_group_owner_id].nil?
+        options.delete(:ip_protocol)
+        options.delete(:from_port)
+        options.delete(:to_port)
+        options.delete(:cidr_ip)        
       end
 
       amazon.revoke_security_group_ingress(options)
