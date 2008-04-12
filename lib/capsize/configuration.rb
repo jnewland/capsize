@@ -15,12 +15,6 @@ Capistrano::Configuration.instance.load do
   # will work out-of-the-box with no external config required.  Users
   # can also opt to set any of these in their deploy.rb file to override them.
 
-  # capsize_config_dir is relative to the location they are running cap from (e.g. RAILS_ROOT)
-  # TODO: Glenn - this directory either needs to exist or be created by capsize somehow. This is why I had defaulted to config before.
-  # Jesse : RESPONSE : Its created by the setup :default task (in meta-tasks) if it doesn't exist.
-  # Running setup your first time using Capsize is required.  You can of course override
-  # this dir in your config to make it any arbitrary location. Please erase this comment and the todo if this
-  # answers your question satisfactorily.  :-)
   set :capsize_config_dir, 'config/capsize'
   set :capsize_secure_config_dir, 'config/capsize'
 

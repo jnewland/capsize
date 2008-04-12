@@ -480,15 +480,6 @@ module Capsize
       end
     end
 
-    # TODO : I was thinking that maybe we can have a way to serialize the instance info for instances
-    # that we have started through this tool.   So for example, when you start an instance we can push
-    # its instance ID onto an object and then serialize it to yaml in the config dir.   This way we can
-    # maintain a sort of database without any of the dependencies of a DB?  Not really fleshed out.   Just
-    # putting this here as a reminder as something to think about??
-
-
-    # TODO : Should these methods with puts in them be in here or in the tasks.rb?
-
     # TODO : Finish this...
     # accept a Response object and provide screen output of the key data from
     # this response that needs to be permanently added to the users deploy.rb

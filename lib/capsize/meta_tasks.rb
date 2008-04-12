@@ -164,15 +164,4 @@ EOF
 
   end
 
-
-  # TODO : Should these be defined here? Doesn't that mean that every
-  # time a deploy:setup is run these tasks are run also?  Can they
-  # really be run in all circumstances without harm if repeated?
-  # Lets discuss...
-  #
-  #callbacks to make this stuff happen
-  #before "deploy:setup", "ec2:setup"
-  #after "deploy:setup", "ec2:generate_config"
-
-
 end
