@@ -31,57 +31,28 @@ Before you can make use of this gem you will need an "Amazon Web Services develo
 
 h3. Installing the gem
 
-Linux / OS X : <pre syntax="ruby">sudo gem install capsize --include-dependencies</pre>
-
-Microsoft Windows : <pre syntax="ruby">gem install capsize --include-dependencies</pre>
-
-Note : This gem has a number of dependencies for runtime and testing.  It is recommended that you choose 'Y' to install dependencies when asked by the gem install tool (unless you passed in the --include-dependencies command which will take care of that automatically).
+<pre syntax="ruby">sudo gem install capsize</pre>
 
 h2. Getting Started
 
-For the purposes of this guide we'll assume you followed the steps in the 'Installing the gem' section above and know how to create a new Ruby on Rails application.  We'll also assume that you have installed Capistrano 2.x properly in that Rails application and have done at least the initial steps for setting up Capistrano (and most importantly have set the Capistrano :application name in deploy.rb).
+In RAILS_ROOT:
 
-cd into the RAILS_ROOT of your project
+<pre syntax="ruby">
+
+capify
+
+</pre>
 
 Edit the file config/deploy.rb and find something like the following:
 
-
 <pre syntax="ruby">
+
 set :application, "foobar"
-</pre>
-
-IMPORTANT : Ensure that the "require 'capsize'" line comes AFTER the line in your configuration where you set your application name.  Capsize will not work properly if this is not done!  Now add this:
-
-<pre syntax="ruby">
-
-# #################################################################
-# CAPSIZE CONFIG SETTINGS
-# #################################################################
-
-# Include the Capsize EC2 'cap' tasks
-# WARNING : This must be placed in your deploy.rb file anywhere 
-# AFTER the line where you set your application name!  Looks like:
-#   set :application, "foobar".
-# The application name is used by Capsize and the order matters!
 require 'capsize'
 
-# Uncomment to override the standard capsize config dir
-# used for standard config info.
-#set :capsize_config_dir, 'config/capsize'
-
-# Uncomment to override location used to store a 
-# secure config file with your AWS credentials,
-# and EC2 private keypair information.
-#set :capsize_secure_config_dir, 'config/capsize'
-
-# Uncomment to override the actual config file names 
-# that are stored in the config dirs noted above.
-#set :capsize_config_file_name, 'capsize.yml'
-#set :capsize_secure_config_file_name, 'secure.yml'
-
 </pre>
 
-If you are picky about the location of your configuration files for Capsize feel free to modify the variables shown in the sample above to suit your environment.  The defaults should be fine for most.  It is easiest if you decide now and modify the file before we create your config in the following steps.
+IMPORTANT : Ensure that the "require 'capsize'" line comes AFTER the line in your configuration where you set your application name.  Capsize will not work properly if this is not done!
 
 Once the Capsize section of deploy.rb is just how you'd like it you should be able to run 'cap -T' to show all available Capistrano commands:
 
@@ -89,15 +60,15 @@ Once the Capsize section of deploy.rb is just how you'd like it you should be ab
 # cap -T
 ...
 cap ec2:console:output                             # Show instance console output.
-cap ec2:images:describe                            # Describe machine images you...
-cap ec2:instances:describe                         # Info about your instances.
+cap ec2:images:show                                # Describe machine images you...
+cap ec2:instances:show                             # Info about your instances.
 cap ec2:instances:reboot                           # Reboot an EC2 instance.
 cap ec2:instances:run                              # Runs an instance of :image_...
 cap ec2:instances:ssh                              # Open an SSH shell to instan...
 cap ec2:instances:terminate                        # Terminate an EC2 instance.
 cap ec2:keypairs:create                            # Create and store a new keyp...
 cap ec2:keypairs:delete                            # Delete a keypair.
-cap ec2:keypairs:describe                          # Describes your keypairs.
+cap ec2:keypairs:show                              # Describes your keypairs.
 cap ec2:security_groups:authorize_ingress          # Authorize firewall ingress ...
 cap ec2:security_groups:create                     # Create a security group.
 cap ec2:security_groups:create_with_standard_ports # in deploy.
@@ -117,6 +88,10 @@ cap ec2:setup
 
 Enjoy!
 
+h3. Project Tools
+
+"GitHub":http://github.com/jnewland/capsize
+
 h3. Related Project Websites
 
 "http://aws.amazon.com/":http://aws.amazon.com/
@@ -126,21 +101,3 @@ h3. Related Project Websites
 "http://capsize.rubyforge.org/":http://capsize.rubyforge.org/
 
 "Capistrano 2":http://www.capify.org/
-
-h3. Project Tools
-
-"Project Home":http://rubyforge.org/projects/capsize/
-"Downloads":http://rubyforge.org/frs/?group_id=3853
-"Browse Code":http://rubyforge.org/scm/?group_id=3853
-"Report Bugs":http://rubyforge.org/tracker/?group_id=3853
-"Request Features":http://rubyforge.org/tracker/?group_id=3853
-"Submit Patches":http://rubyforge.org/tracker/?group_id=3853
-
-
-h2. Credits
-
-The original version of this Capistrano plugin gem (Capazon) was written by Jesse Newland .  Jesse got off to a fantastic start, especially considering the pretty limited functionality of the original 'amazon-ec2' gem library (I can say that since I wrote the first version based on Amazon Web Services sample code).  Jesse has graciously allowed me to run with a lot of changes and deprecate the original gem.  Unfortunately the name change was necessitated by a cease and desist letter from a certain company that shall remain unnamed.  We are excited to have Jesse's help on the transition, code contributions, and helping to set the future direction of the Capsize gem.
- 
-h2. Contact
-
-Comments, patches, and bug reports are very welcome. Please send an email to the address below or use the RubyForge forum for this project.
