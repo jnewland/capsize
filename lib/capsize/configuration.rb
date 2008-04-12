@@ -1,14 +1,3 @@
-#--
-# Capsize : A Capistrano Plugin which provides access to the amazon-ec2 gem's methods
-#
-# Ruby Gem Name::  capsize
-# Author::    Glenn Rempe  (mailto:grempe@rubyforge.org)
-# Author::    Jesse Newland  (mailto:jnewland@gmail.com)
-# Copyright:: Copyright (c) 2007 Glenn Rempe, Jesse Newland
-# License::   Distributes under the same terms as Ruby
-# Home::      http://amazon-ec2-cap.rubyforge.org
-#++
-
 Capistrano::Configuration.instance.load do
 
   # Set reasonable defaults for all needed values so in theory this Cap plugin

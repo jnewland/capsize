@@ -57,5 +57,5 @@ require 'capsize'
 Rubyforge Project Page:: http://rubyforge.org/projects/capsize
 Author::    Glenn Rempe (grempe@rubyforge.org[mailto:grempe@rubyforge.org])
 Author::    Jesse Newland (http://soylentfoo.jnewland.com) (jnewland@gmail.com[mailto:jnewland@gmail.com])
-Copyright:: Copyright (c) 2007 Glenn Rempe, Jesse Newland
+Copyright:: Copyright (c) 2007-2008 Jesse Newland, Glenn Rempe
 License::   Distributes under the same terms as Ruby
