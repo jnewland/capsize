@@ -354,7 +354,9 @@ Capistrano::Configuration.instance.load do
                 puts "  ipPermissions:ipProtocol = " + permission.ipProtocol unless permission.ipProtocol.nil?
                 puts "  ipPermissions:fromPort = " + permission.fromPort unless permission.fromPort.nil?
                 puts "  ipPermissions:toPort = " + permission.toPort unless permission.toPort.nil?
-
+                puts "  ipPermissions:sourceSecurityGroupName = " + permission.groups.item.first.groupName unless permission.groups.nil?
+                puts "  ipPermissions:sourceSecurityGroupOwnerId = " + permission.groups.item.first.userId unless permission.groups.nil?
+                
                 unless permission.ipRanges.nil?
                   permission.ipRanges.item.each do |range|
                     puts "  ipRanges:cidrIp = " + range.cidrIp unless range.cidrIp.nil?
