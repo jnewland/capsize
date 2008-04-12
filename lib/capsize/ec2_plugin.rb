@@ -198,7 +198,6 @@ module Capsize
 
     # Run EC2 instance(s)
     # TODO : Deal with starting multiple instances! Now only single instances are properly handled.
-    # TODO : Is there a way to extract the 'puts' calls from here and make this have less 'view' code?
     def run_instance(options = {})
       amazon = connect()
 
@@ -245,14 +244,12 @@ module Capsize
       puts "Instance #{instance_id} startup in progress..."
 
       # loop checking for instance pending notification
-      puts "Checking every 10 seconds to detect startup state of 'pending' for up to 5 minutes"
       tries = 0
       begin
         instance = amazon.describe_instances(:instance_id => instance_id)
         raise "Waiting." unless response.instancesSet.item[0].instanceState.name == "pending"
-        puts "Instance #{instance_id} is 'pending'"
+        puts "Instance #{instance_id} entered state 'pending'"
       rescue
-        puts "."
         sleep(10)
         tries += 1
         retry unless tries == 35
@@ -260,14 +257,12 @@ module Capsize
       end
 
       #loop checking for confirmation that instance is running
-      puts "Checking every 10 seconds to detect startup state of 'running' for up to 5 minutes"
       tries = 0
       begin
         instance = amazon.describe_instances(:instance_id => instance_id)
         raise "Server Not Running" unless instance.reservationSet.item[0].instancesSet.item[0].instanceState.name == "running"
-        puts "Instance #{instance_id} is 'running'"
+        puts "Instance #{instance_id} entered state 'running'"
       rescue
-        puts "."
         sleep(10)
         tries += 1
         retry unless tries == 35
@@ -275,7 +270,6 @@ module Capsize
       end
 
       #loop waiting to get the public key
-      puts "Checking every 10 seconds detect that we can SSH into this instance for up to 5 minutes"
       tries = 0
       begin
         require 'timeout'
@@ -294,8 +288,6 @@ module Capsize
         end
         return instance
       rescue Exception => e
-        puts e
-        puts "retrying in 10 seconds..."
         sleep(10)
         tries += 1
         retry unless tries == 35
