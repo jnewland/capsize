@@ -537,6 +537,7 @@ module Capsize
             unless reservation.instancesSet.nil?
               reservation.instancesSet.item.each do |instance|
                 puts "  instancesSet:instanceId = " + instance.instanceId unless instance.instanceId.nil?
+                puts "  instancesSet:instanceType = " + instance.instanceType unless instance.instanceType.nil?
                 puts "  instancesSet:imageId = " + instance.imageId unless instance.imageId.nil?
                 puts "  instancesSet:privateDnsName = " + instance.privateDnsName unless instance.privateDnsName.nil?
                 puts "  instancesSet:dnsName = " + instance.dnsName unless instance.dnsName.nil?
