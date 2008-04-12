@@ -10,13 +10,9 @@ module Capsize
 
     raise Exception if symbol.nil? || symbol.class != Symbol # TODO : Jesse: fixup exceptions in capsize
 
-    # TODO : Jesse : Jesse, you talked about adding a simple caching layer so
-    # that calls to get() don't have to be avoided since they hit the filesystem
-    # multiple times per call...  Thoughts?
-
     # populate the OpenStructs with contents of config files so we can query them.
-    @capsize_config = load_config(:config_file => "#{fetch(:capsize_config_dir)}/#{fetch(:capsize_config_file_name)}")
-    @secure_config = load_config(:config_file => "#{fetch(:capsize_secure_config_dir)}/#{fetch(:capsize_secure_config_file_name)}")
+    @capsize_config ||= load_config(:config_file => "#{fetch(:capsize_config_dir)}/#{fetch(:capsize_config_file_name)}")
+    @secure_config ||= load_config(:config_file => "#{fetch(:capsize_secure_config_dir)}/#{fetch(:capsize_secure_config_file_name)}")
 
     # fetch var from default capsize or default capistrano config vars,
     # and if it doesn't exist set it to nil
