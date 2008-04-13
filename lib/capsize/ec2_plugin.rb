@@ -28,11 +28,11 @@ module Capsize
       return hostnames if instances.reservationSet.nil?
       instances.reservationSet.item.each do |reservation|
         hostname = nil
-        matches = false
+        in_group = false
         running = false
         unless reservation.groupSet.nil?
           reservation.groupSet.item.each do |group|
-            matches = group.groupId == group_name
+            in_group = group.groupId == group_name
           end
         end
 
@@ -42,7 +42,7 @@ module Capsize
             running = (!instance.instanceState.nil? && (instance.instanceState.name == "running"))
           end
         end
-        hostnames << hostname if matches and running
+        hostnames << hostname if in_group and running
       end
       return hostnames
     end
