@@ -545,7 +545,7 @@ module Capsize
                 puts "  instancesSet:privateDnsName = " + instance.privateDnsName unless instance.privateDnsName.nil?
                 puts "  instancesSet:dnsName = " + instance.dnsName unless instance.dnsName.nil?
                 puts "  instancesSet:reason = " + instance.reason unless instance.reason.nil?
-                puts "  instancesSet:reason = " + instance.launchTime unless instance.launchTime.nil?
+                puts "  instancesSet:launchTime = " + instance.launchTime unless instance.launchTime.nil?
                 puts "  instancesSet:amiLaunchIndex = " + instance.amiLaunchIndex
 
                 unless instance.instanceState.nil?
