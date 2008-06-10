@@ -1,0 +1,78 @@
+h1. Capsize
+
+Capsize provides Capistrano tasks to manage Amazon EC2.
+
+This project is in no way endorsed, sponsored by, or associated with Amazon, Amazon.com, or Amazon Web Services.
+
+h2. Installation
+
+* @gem install jnewland-capsize -s http://gems.github.com@
+* Edit your your @config/deploy.rb@:
+
+<pre>
+<code>
+# #################################################################
+# CAPSIZE EC2 GEM
+# #################################################################
+
+# Include the Capsize EC2 'cap' tasks
+# WARNING : This must be placed in your deploy.rb file anywhere
+# AFTER the line where you set your application name!  Looks like:
+#   set :application, "foobar".
+# The application name is used by Capsize and the order matters.
+require 'capsize'
+
+# Use this to overwrite the standard capsize config dir locations
+#set :capsize_config_dir, 'config/capsize'
+#set :capsize_secure_config_dir, 'config/capsize'
+
+# Use these to overwrite the actual config file names stored in the config dirs.
+#set :capsize_config_file_name, 'capsize.yml'
+#set :capsize_secure_config_file_name, 'secure.yml'
+</code>
+</pre>
+
+* Run @cap deploy:setup@
+* Paste the generated config into @config/deploy.rb@
+
+h2. Tasks
+
+Run cap -e <taskname> on any task to get more details
+
+* cap ec2:console:output
+* cap ec2:images:show
+* cap ec2:instances:reboot
+* cap ec2:instances:run
+* cap ec2:instances:show
+* cap ec2:instances:ssh
+* cap ec2:instances:terminate
+* cap ec2:keypairs:create
+* cap ec2:keypairs:delete
+* cap ec2:keypairs:show
+* cap ec2:security_groups:authorize_ingress
+* cap ec2:security_groups:create
+* cap ec2:security_groups:create_with_standard_ports
+* cap ec2:security_groups:delete
+* cap ec2:security_groups:revoke_ingress
+* cap ec2:security_groups:show
+* cap ec2:setup
+* cap ec2:setup:check
+
+h4. Notes:
+
+* <em>All tasks optionally take environment variables in lieu of capistrano configuration variables.</em>
+
+h4. Contributing
+
+Source is on "GitHub":http://github.com/jnewland/capsize. You know what to do.
+
+h4. Authors
+
+* "Jesse Newland":http://jnewland.com/
+* "Glenn Rempe":http://blog.rempe.us/
+
+h4. Copyright
+
+(c) 2007-2008 Jesse Newland, Glenn Rempe
+
+Distributes under the same terms as Ruby
