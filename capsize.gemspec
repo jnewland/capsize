@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ['Jesse Newland','Glenn Rempe']
-  s.date = %q{2008-06-10}
+  s.date = %q{2008-07-13}
   s.description = %q{Capsize is a Capistrano plugin used to provide an easy way to manage and script interaction with the Amazon EC2 service using the amazon-ec2 Ruby gem.}
   s.email = %q{jnewland@gmail.com}
   s.extra_rdoc_files = ["README.textile"]
@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://github.com/jnewland/capsize}
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{capsize}
-  s.rubygems_version = %q{0.5.0}
+  s.rubygems_version = %q{0.5.1}
   s.summary = %q{Capsize is a Capistrano plugin used to provide an easy way to manage and script interaction with the Amazon EC2 service using the amazon-ec2 Ruby gem.}
 
 
