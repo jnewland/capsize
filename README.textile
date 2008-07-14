@@ -40,6 +40,11 @@ h2. Tasks
 Run cap -e <taskname> on any task to get more details
 
 * cap ec2:console:output
+* cap ec2:addresses:allocate
+* cap ec2:addresses:associate
+* cap ec2:addresses:disassociate
+* cap ec2:addresses:release
+* cap ec2:addresses:show
 * cap ec2:images:show
 * cap ec2:instances:reboot
 * cap ec2:instances:run
