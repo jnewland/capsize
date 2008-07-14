@@ -458,6 +458,41 @@ module Capsize
 
     end
 
+    # ELASTIC IP ADDRESS METHODS
+    #########################################
+
+    # returns information about elastic IP addresses owned by the user
+    def describe_addresses(options = {})
+      amazon = connect()
+      options = {:public_ip => []}.merge(options)
+      amazon.describe_addresses(:public_ip => options[:public_ip])
+    end
+    
+    # allocate an elastic IP address for use with this account
+    def allocate_address
+      amazon = connect()
+      amazon.allocate_address
+    end
+    
+    # release an elastic IP address from this account
+    def release_address(options)
+      amazon = connect()
+      amazon.release_address(:public_ip => options[:public_ip])
+    end
+    
+    # associate an elastic IP address to an instance
+    def associate_address(options)
+      amazon = connect()
+      amazon.associate_address(:public_ip => options[:public_ip], :instance_id => options[:instance_id])
+    end
+    
+    # disassociate an elastic IP address from whatever instance it may be assigned to
+    def disassociate_address(options)
+      amazon = connect()
+      amazon.disassociate_address(:public_ip => options[:public_ip])
+    end
+
+
     # CAPSIZE HELPER METHODS
     #########################################
     # call these from tasks.rb with 'capsize.method_name'
@@ -563,6 +598,21 @@ module Capsize
         puts "You don't own any running or pending instances"
       end
     end
+    
+    # print the result of an describe_addresses
+    def print_address_description(result = nil)
+      puts "" if result.nil?
+      unless result.addressesSet.nil?
+        result.addressesSet.item.each do |item|
+          puts "addressesSet:publicIp = " + item.publicIp unless item.publicIp.nil?
+          puts "addressesSet:instanceId = " + (item.instanceId ? item.instanceId : '(unassociated)')
+          puts ""
+        end
+      else
+        puts "You don't have any elastic IP addresses. Run 'cap ec2:addresses:allocate' to acquire one."
+      end
+    end
+    
   end
 end
 Capistrano.plugin :capsize_ec2, Capsize::CapsizeEC2

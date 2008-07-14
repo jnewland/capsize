@@ -12,7 +12,7 @@ Capistrano::Configuration.instance.load do
       Show instance console output.
       You can view the console of a specific instance by doing one of the following:
       - define an :instance_id in any Capsize config file with "set :instance_id, 'i-123456'"
-      - Overide this on the command line with "cap ec2:console:output INSTANCE_ID='i-123456'"
+      - Override this on the command line with "cap ec2:console:output INSTANCE_ID='i-123456'"
       - If neither of these are provided you will be prompted by Capistano for the instance ID you wish to terminate.
       DESC
       task :output do
@@ -228,7 +228,7 @@ Capistrano::Configuration.instance.load do
       Terminate an EC2 instance.
       You can terminate a specific instance by doing one of the following:
       - define an :instance_id in deploy.rb with "set :instance_id, 'i-123456'"
-      - Overide this on the command line with "cap ec2:instances:terminate INSTANCE_ID='i-123456'"
+      - Override this on the command line with "cap ec2:instances:terminate INSTANCE_ID='i-123456'"
       - If neither of these are provided you will be prompted by Capistano for the instance ID you wish to terminate.
       DESC
       task :terminate do
@@ -259,7 +259,7 @@ Capistrano::Configuration.instance.load do
       Reboot an EC2 instance.
       You can reboot a specific instance by doing one of the following:
       - define an :instance_id in deploy.rb with "set :instance_id, 'i-123456'"
-      - Overide this on the command line with "cap ec2:instances:reboot INSTANCE_ID='i-123456'"
+      - Override this on the command line with "cap ec2:instances:reboot INSTANCE_ID='i-123456'"
       - If neither of these are provided you will be prompted by Capistano for the instance ID you wish to reboot.
       DESC
       task :reboot do
@@ -510,6 +510,145 @@ Capistrano::Configuration.instance.load do
 
     end
 
-  end # end namespace :ec2
 
+    # ELASTIC IP (ADDRESSES) TASKS
+    #########################################
+
+    namespace :addresses do
+
+      desc <<-DESC
+      Show and describe elastic IP addresses assigned to your account.
+      DESC
+      task :show do
+        begin
+          result = capsize_ec2.describe_addresses()
+        rescue Exception => e
+          puts "The attempt to show elastic IP addresses failed with error : " + e
+          raise e
+        end
+        
+        capsize_ec2.print_address_description(result)
+      end
+
+      desc <<-DESC
+      Acquire a new elastic IP address for use with your account.
+      DESC
+      task :allocate do
+        begin
+          print "Allocating elastic IP address ... "
+          $stdout.flush
+          response = capsize_ec2.allocate_address()
+          puts "success"
+          puts "Allocated address: #{response.publicIp}"
+          puts ""
+        rescue Exception => e
+          puts "failed"
+          puts "The attempt to allocate an elastic IP addresses failed with error : " + e
+          raise e
+        end
+      end
+
+      desc <<-DESC
+      Release an elastic IP from your account.
+      You can release a specific elastic IP by doing one of the following:
+      - define a :public_ip in deploy.rb with "set :public_ip, '123.1.2.3'"
+      - Override this on the command line with "cap ec2:addresses:release PUBLIC_IP='123.1.2.3'"
+      DESC
+      task :release do
+
+        capsize.get(:public_ip)
+
+        case public_ip
+        when nil, ""
+          puts "You don't seem to have set a public_ip ..."
+        else
+          confirm = (Capistrano::CLI.ui.ask("WARNING! Really release elastic IP address \"#{public_ip}\"? (y/N): ").downcase == 'y')
+          if confirm
+            begin
+              response = capsize_ec2.release_address({:public_ip => public_ip})
+              puts "The request to release elastic IP address #{public_ip} has been accepted.  Monitor the status of the request with 'cap ec2:addresses:show'"
+            rescue Exception => e
+              puts "The attempt to release the elastic IP address failed with error : " + e
+              raise e
+            end
+          else
+            puts "Your address release request has been cancelled."
+          end
+        end
+      end
+
+
+      desc <<-DESC
+      Associate an elastic IP address with an instance.
+      If the IP address is currently assigned to another instance, the IP address
+      is assigned to the new instance.
+
+      You must supply both a public_ip (this is the elastic IP address you want to assign)
+      and an instance_id (this is the instance to which you want to assign the address)
+
+      You can associate an elastic IP with an instance by doing one of the following:
+      - Define these variables in deploy.rb with "set :public_ip, '123.1.2.3'; set :instance_id, 'i-12312312';"
+      - Override this on the command line with "cap ec2:addresses:associate PUBLIC_IP='123.1.2.3' INSTANCE_ID='i-12312312'"
+      - A combination of the above.
+      DESC
+      task :associate do
+
+        capsize.get(:public_ip)
+        capsize.get(:instance_id)
+
+        if !public_ip || public_ip == ''
+          puts "You don't seem to have set a public_ip ..."
+        elsif !instance_id || instance_id == ''
+          puts "You don't seem to have set an instance_id ..."
+        else
+          #TODO: check if this IP is already assigned to another instance and make 
+          # the user confirm the new association if that's the case
+          begin
+            response = capsize_ec2.associate_address(:public_ip => public_ip, :instance_id => instance_id)
+            puts "The elastic IP address #{public_ip} has been associated with " +
+                 "instance #{instance_id}."
+            puts "** It may take several minutes for this mapping to take effect."
+          rescue Exception => e
+            puts "The attempt to associate the elastic IP address failed with error : " + e
+            raise e
+          end
+        end
+      end
+
+
+      desc <<-DESC
+      Disassociates the specified elastic IP from whatever instance it's 
+      currently associated with
+
+      You can disassociate a specific elastic IP by doing one of the following:
+      - define a :public_ip in deploy.rb with "set :public_ip, '123.1.2.3'"
+      - Override this on the command line with "cap ec2:addresses:disassociate PUBLIC_IP='123.1.2.3'"
+      - If neither of these are provided you will be prompted by Capistano for the IP you wish to disassociate.
+      DESC
+      task :disassociate do
+
+        capsize.get(:public_ip)
+
+        case public_ip
+        when nil, ""
+          puts "You don't seem to have set a public_ip ..."
+        else
+          confirm = (Capistrano::CLI.ui.ask("WARNING! Really disassociate elastic IP address \"#{public_ip}\"? (y/N): ").downcase == 'y')
+          if confirm
+            begin
+              response = capsize_ec2.disassociate_address({:public_ip => public_ip})
+              puts "The elastic IP address #{public_ip} has been disassociated."
+            rescue Exception => e
+              puts "The attempt to disassociate the elastic IP address failed with error : " + e
+              raise e
+            end
+          else
+            puts "Your address disassociation request has been cancelled."
+          end
+        end
+      end
+
+    end # end namespace :addresses
+
+  end # end namespace :ec2
 end # end Capistrano::Configuration.instance.load
