@@ -60,7 +60,7 @@ hoe = Hoe.new(GEM_NAME, VERS) do |p|
   # == Optional
   p.changes = p.paragraphs_of("History.txt", 0..1).join("\\n\\n")
   #p.extra_deps = []     # An array of rubygem dependencies [name, version], e.g. [ ['active_support', '>= 1.3.1'] ]
-  p.extra_deps = [['capistrano', '>= 2.1.0'], ['amazon-ec2', '>= 0.2.6'], ['rcov', '>= 0.8.1.2.0'], ['SQS', '>= 0.1.5'], ['builder', '>= 2.1.2'], ['RedCloth', '>= 3.0.4']]
+  p.extra_deps = [['capistrano', '>= 2.1.0'], ['amazon-ec2', '>= 0.2.14'], ['rcov', '>= 0.8.1.2.0'], ['SQS', '>= 0.1.5'], ['builder', '>= 2.1.2'], ['RedCloth', '>= 3.0.4']]
 
   #p.spec_extras = {}    # A hash of extra values to set in the gemspec.
   p.spec_extras = {

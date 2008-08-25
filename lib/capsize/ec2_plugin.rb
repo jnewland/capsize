@@ -211,7 +211,8 @@ module Capsize
                   :group_name => nil,
                   :user_data => get(:user_data),
                   :addressing_type => get(:addressing_type),
-                  :instance_type => get(:instance_type)
+                  :instance_type => get(:instance_type),
+                  :availability_zone => get(:availability_zone)
                 }.merge(options)
 
       # What security group should we run as?
