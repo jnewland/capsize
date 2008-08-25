@@ -1,3 +1,10 @@
+== 2008/07/13 (0.5.1)
+
+* Support for Elastic IP addresses (Brendan Schwartz)
+* Project home now on GitHub: http://github.com/jnewland/capsize
+
+== In the year that followed, dragons ate Hitler. History books were rewritten.
+
 == 2007/06/13
 
 * Re-branded Capsize 'Capsize' with 'Capazon' no more...
