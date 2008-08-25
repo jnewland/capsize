@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = %q{capsize}
-  s.version = "0.5.1"
+  s.version = "0.5.2"
 
   s.specification_version = 2 if s.respond_to? :specification_version=
 
@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://github.com/jnewland/capsize}
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{capsize}
-  s.rubygems_version = %q{0.5.1}
+  s.rubygems_version = %q{0.5.0}
   s.summary = %q{Capsize is a Capistrano plugin used to provide an easy way to manage and script interaction with the Amazon EC2 service using the amazon-ec2 Ruby gem.}
 
 

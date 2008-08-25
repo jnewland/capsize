@@ -35,7 +35,7 @@ VERS = Capsize::VERSION::STRING + (REV ? ".#{REV}" : "")
 RDOC_OPTS = ['--quiet', '--title', 'capsize documentation',
     "--opname", "index.html",
     "--line-numbers",
-    "--main", "README.txt",
+    "--main", "README.textile",
     "--inline-source"]
 
 class Hoe
@@ -64,7 +64,7 @@ hoe = Hoe.new(GEM_NAME, VERS) do |p|
 
   #p.spec_extras = {}    # A hash of extra values to set in the gemspec.
   p.spec_extras = {
-    :extra_rdoc_files => ["README.txt", "History.txt"],
+    :extra_rdoc_files => ["README.textile", "History.txt"],
     :rdoc_options => RDOC_OPTS,
     :autorequire => "capsize"
   }

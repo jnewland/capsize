@@ -1,3 +1,8 @@
+== 2008/08/24 (0.5.2)
+
+* Fix bug in create_keypair so that setup task works again (Ches Martin)
+* Support availability zone specification in run_instance (Ches Martin)
+
 == 2008/07/13 (0.5.1)
 
 * Support for Elastic IP addresses (Brendan Schwartz)
