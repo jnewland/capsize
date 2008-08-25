@@ -55,7 +55,7 @@ module Capsize
     when :group_description
       # the :group_description should fall back to the application name if not provided.
       if fetch(:group_description, nil).nil?
-        set symbol, fetch(:application)
+        set symbol, "Security group for the #{fetch(:application)} application."
       end
     end
 

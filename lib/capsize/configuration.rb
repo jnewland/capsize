@@ -22,7 +22,7 @@ Capistrano::Configuration.instance.load do
 
   # defaults for new security groups
   set :group_name, nil
-  set :group_description, "Default security group for the application."
+  set :group_description, nil
 
   set :ip_protocol, 'tcp'
   set :from_port, nil
