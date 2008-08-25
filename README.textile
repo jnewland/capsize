@@ -32,8 +32,8 @@ require 'capsize'
 </code>
 </pre>
 
-* Run @cap deploy:setup@
-* Paste the generated config into @config/deploy.rb@
+* Run @cap ec2:setup@
+* Read the task's output for example usage.
 
 h2. Tasks
 
