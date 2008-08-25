@@ -103,12 +103,7 @@ module Capsize
 
       key_file = get_key_file(:key_name => options[:key_name], :key_dir => options[:key_dir])
 
-      # Verify keypair doesn't already exist on EC2 servers...
-      unless amazon.describe_keypairs(:key_name => options[:key_name]).keySet.nil?
-        raise Exception, "Sorry, a keypair with the name \"#{options[:key_name]}\" already exists on EC2."
-      end
-
-      # and doesn't exist locally either...
+      # Verify local private key file doesn't already exist...
       file_exists_message = <<-MESSAGE
       \n
       Warning! A keypair with the name \"#{key_file}\"
@@ -118,8 +113,16 @@ module Capsize
       MESSAGE
       raise Exception, file_exists_message if File.exists?(key_file)
 
-      #All is good, so we create the new keypair
-      private_key = amazon.create_keypair(:key_name => options[:key_name])
+      # Try to create the new keypair
+      begin
+        private_key = amazon.create_keypair(:key_name => options[:key_name])
+      rescue EC2::InvalidKeyPairDuplicate
+        # keypair already exists with this :key_name
+        # Re-raising will provide a useful message, so we don't need to
+        raise
+      rescue EC2::InvalidKeyPairNotFound
+        # this is a new keypair, continue
+      end
 
       # write private key to file
       File.open(key_file, 'w') do |file|

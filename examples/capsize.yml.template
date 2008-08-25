@@ -30,8 +30,9 @@ common: &common
   # SECURITY GROUP CONFIG
   ##########################################################
   # Set the default security group to apply firewall ingress rules to.
-  # Defaults, appropriately, to 'default' security group.
-  #group_name: 'default'
+  # Defaults to a group named from the 'application' Cap variable, and
+  # such a group is created by 'cap ec2:setup' by default as well.
+  #group_name: 'my_app'
 
   # Set the default security group ip protocol to apply firewall ingress rules to.
   # Defaults, appropriately, to 'tcp'.

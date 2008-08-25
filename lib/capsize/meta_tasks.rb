@@ -12,9 +12,10 @@ Capistrano::Configuration.instance.load do
       - Create :capsize_secure_config_dir
       - Copy capsize.yml.template to :capsize_config_dir/capsize.yml unless it already exists
       - Automatically generate :capsize_secure_config_dir/secure.yml unless it already exists
-      - Instruct user to test configuration with "cap ec2:images:describe"
-      - Instruct user how to create a new keypair
-      - Instruct user how to setup a new security group.
+      - Automatically test authentication configuration with "cap ec2:setup:check"
+      - Automatically create a new keypair named by :key_name, or default to :application
+      - Automatically create a new security group named by :group_name, or default to :application
+      - Add ingress rules for this security group permitting global access on ports 22, 80 and 443
       DESC
       task :default do
 
@@ -28,7 +29,7 @@ Capistrano::Configuration.instance.load do
           FileUtils.mkdir fetch(:capsize_secure_config_dir)
         end
 
-        # copy the standard config file template, unless the dest file alread exists
+        # copy the standard config file template, unless the dest file already exists
         unless File.exists?("#{fetch(:capsize_secure_config_dir)}/#{fetch(:capsize_secure_config_file_name)}")
           puts "Please enter your EC2 account information."
           puts "We'll then write it to a config file at #{fetch(:capsize_secure_config_dir)}/#{fetch(:capsize_secure_config_file_name)}"
@@ -117,7 +118,7 @@ EOF
           are likely most important).
 
           Now lets connect to it with SSH (this may take a few tries, sometimes it takes a
-          minute for the new instance to respond to SSH):
+          few minutes for the new instance to respond to SSH):
 
             cap ec2:instances:ssh INSTANCE_ID='i-xxxxxx'
 
@@ -149,8 +150,8 @@ EOF
 
       end
 
-    end
+    end # end namespace :setup
 
-  end
+  end # end namespace :ec2
 
 end
