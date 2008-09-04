@@ -587,9 +587,13 @@ module Capsize
                 puts "  instancesSet:launchTime = " + instance.launchTime unless instance.launchTime.nil?
                 puts "  instancesSet:amiLaunchIndex = " + instance.amiLaunchIndex
 
+                unless instance.placement.nil?
+                  puts "  instancesSet:placement:availabilityZone = " + instance.placement.availabilityZone
+                end
+
                 unless instance.instanceState.nil?
-                  puts "  instanceState:code = " + instance.instanceState.code
-                  puts "  instanceState:name = " + instance.instanceState.name
+                  puts "  instancesSet:instanceState:code = " + instance.instanceState.code
+                  puts "  instancesSet:instanceState:name = " + instance.instanceState.name
                 end
 
               end
