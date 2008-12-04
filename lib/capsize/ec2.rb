@@ -650,5 +650,128 @@ Capistrano::Configuration.instance.load do
 
     end # end namespace :addresses
 
+
+    # VOLUME TASKS
+    #########################################
+     
+      namespace :volumes do 
+        desc <<-DESC
+        Describes existing volumes.
+        DESC
+        task :show do
+          begin
+            amazon = capsize_ec2.connect
+            volumes = amazon.describe_volumes
+          
+            if volumes.volumeSet && volumes.volumeSet.item
+              volumes.volumeSet.item.each do |volume|
+                puts "volume:volumeId = #{volume.volumeId}"
+                %w(status size snapshotId availabilityZone attachmentSet createTime).each do |field|
+                  puts "  volume:#{field} = #{volume[field]}"
+                end
+              end
+            else
+              puts "You have no volumes"
+            end
+          rescue Exception => e
+            puts "The attempt to show volumes failed with the error : " + e
+            raise e
+          end
+        end
+
+        desc <<-DESC
+        Create a new EBS volume.
+        This will create a new EBS volume of SIZE Gb in the availability zone given as ZONE
+        (eg us-east-1{a,b,c})
+        So to create a 10Gb volume in zone 'us-east-1c':
+         cap ec2:volumes:create SIZE=10 ZONE=us-east-1c
+        DESC
+        task :create do
+          begin
+            size = capsize.get(:size)
+            zone = capsize.get(:zone)
+
+            puts "Creating #{size}Gb volume in #{zone}"
+
+            amazon = capsize_ec2.connect
+            res = amazon.create_volume :size => size, :availability_zone => zone
+            puts "Created volume #{res["volumeId"]}"
+
+          rescue Exception => e
+            puts "The attempt to create a volume failed with the error : " + e
+            raise e
+          end
+        end
+
+        desc <<-DESC
+        Attach an EBS volume to an instance.
+        This will attach the EBS volume VOLUME_ID to the instance INSTANCE_ID
+        at the device path DEVICE.
+        DESC
+        task :attach do
+          begin
+            volume_id = capsize.get :volume_id
+            instance_id = capsize.get :instance_id
+            device = capsize.get :device
+            puts "Attaching volume #{volume_id} to instance #{instance_id} at #{device}"
+
+            amazon = capsize_ec2.connect
+            response = amazon.attach_volume :volume_id => volume_id, :instance_id => instance_id, :device => device
+            if response.res == "true"
+              puts "Volume #{volume_id} attached to #{instance_id}"
+            end
+          rescue Exception => e
+            puts "The attempt to attach volume #{volume_id} failed with the error : " + e
+            raise e
+          end
+        end
+
+        desc <<-DESC
+        Detach an EBS volume.
+        This will detach the EBS volume VOLUME_ID from any instance it is connected to.
+        DESC
+        task :detach do
+          begin
+            volume_id = capsize.get :volume_id
+            puts "Detaching volume #{volume_id}"
+
+            amazon = capsize_ec2.connect
+            response = amazon.detach_volume :volume_id => volume_id
+            if response.res == "true"
+              puts "Volume #{volume_id} detached"
+            end
+          rescue Exception => e
+            puts "The attempt to detach volume #{volume_id} failed with the error : " + e
+            raise e
+          end
+        end
+
+        desc <<-DESC
+        Delete an EBS volume.
+        This will delete the EBS volume VOLUME_ID.
+        DESC
+        task :delete do 
+
+          confirm = (Capistrano::CLI.ui.ask("WARNING! Really terminate instance \"#{instance_id}\"? (y/N): ").downcase == 'y')
+          if confirm
+            begin
+              volume_id = capsize.get :volume_id
+              puts "Deleting volume #{volume_id}"
+              
+              amazon = capsize_ec2.connect
+              response = amazon.delete_volume :volume_id => volume_id
+              if response.res == "true"
+                puts "Volume #{volume_id} deleted"
+              end
+            rescue Exception => e
+              puts "The attempt to create a volume failed with the error : " + e
+              raise e
+            end
+          end
+        end
+
+      end # end namespace :volumes
+
+
   end # end namespace :ec2
 end # end Capistrano::Configuration.instance.load
