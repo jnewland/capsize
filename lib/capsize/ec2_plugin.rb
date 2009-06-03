@@ -32,7 +32,7 @@ module Capsize
         running = false
         unless reservation.groupSet.nil?
           reservation.groupSet.item.each do |group|
-            in_group = group.groupId == group_name
+            break if in_group = group.groupId == group_name
           end
         end
 
