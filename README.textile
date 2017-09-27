@@ -23,12 +23,12 @@ h2. Installation
 require 'capsize'
 
 # Use this to overwrite the standard capsize config dir locations
-#set :capsize_config_dir, 'config/capsize'
-#set :capsize_secure_config_dir, 'config/capsize'
+# set :capsize_config_dir, 'config/capsize'
+# set :capsize_secure_config_dir, 'config/capsize'
 
 # Use these to overwrite the actual config file names stored in the config dirs.
-#set :capsize_config_file_name, 'capsize.yml'
-#set :capsize_secure_config_file_name, 'secure.yml'
+# set :capsize_config_file_name, 'capsize.yml'
+# set :capsize_secure_config_file_name, 'secure.yml'
 </code>
 </pre>
 
